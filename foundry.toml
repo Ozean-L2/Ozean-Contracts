@@ -1,0 +1,14 @@
+[profile.default]
+solc-version = "0.8.25"
+libs = ['lib']
+optimizer = true
+optimizer_runs = 420_000
+fuzz_max_global_rejects = 420_000
+
+gas_reports = [
+    "Contract"
+]
+
+remappings = [
+    "@openzeppelin/=lib/openzeppelin-contracts/contracts",
+]
