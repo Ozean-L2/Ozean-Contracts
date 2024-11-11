@@ -1,14 +1,19 @@
 [profile.default]
-solc-version = "0.8.25"
+solc-version = "0.8.15"
 libs = ['lib']
 optimizer = true
 optimizer_runs = 420_000
 fuzz_max_global_rejects = 420_000
 
 gas_reports = [
-    "Contract"
+    "USDXBridge",
+    "LGEStaking",
+    "LGEMigrationV1",
+    "OzUSD",
+    "WozUSD"
 ]
 
 remappings = [
-    "@openzeppelin/=lib/openzeppelin-contracts/contracts",
+    "openzeppelin/=lib/openzeppelin-contracts/contracts",
+    "optimism/=lib/optimism/packages/contracts-bedrock",
 ]
