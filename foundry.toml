@@ -14,6 +14,17 @@ gas_reports = [
 ]
 
 remappings = [
-    "openzeppelin/=lib/openzeppelin-contracts/contracts",
+    "openzeppelin/=lib/openzeppelin-contracts",
     "optimism/=lib/optimism/packages/contracts-bedrock",
+    '@openzeppelin/contracts-upgradeable/=lib/optimism/packages/contracts-bedrock/lib/openzeppelin-contracts-upgradeable/contracts',
+    '@openzeppelin/contracts/=lib/optimism/packages/contracts-bedrock/lib/openzeppelin-contracts/contracts',
+    '@openzeppelin/contracts-v5/=lib/optimism/packages/contracts-bedrock/lib/openzeppelin-contracts-v5/contracts',
+    '@rari-capital/solmate/=lib/optimism/packages/contracts-bedrock/lib/solmate',
+    '@lib-keccak/=lib/optimism/packages/contracts-bedrock/lib/lib-keccak/contracts/lib',
+    '@solady/=lib/optimism/packages/contracts-bedrock/lib/solady/src',
+    'forge-std/=lib/optimism/packages/contracts-bedrock/lib/forge-std/src',
+    'ds-test/=lib/optimism/packages/contracts-bedrock/lib/forge-std/lib/ds-test/src',
+    'safe-contracts/=lib/optimism/packages/contracts-bedrock/lib/safe-contracts/contracts',
+    'kontrol-cheatcodes/=lib/optimism/packages/contracts-bedrock/lib/kontrol-cheatcodes/src',
+    'gelato/=lib/optimism/packages/contracts-bedrock/lib/automate/contracts'
 ]
