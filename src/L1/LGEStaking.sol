@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-import { Ownable } from "openzeppelin/contracts/access/Ownable.sol";
-import { SafeERC20 } from "openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IERC20 } from "openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ReentrancyGuard } from "openzeppelin/contracts/security/ReentrancyGuard.sol";
-import { Pausable } from "openzeppelin/contracts/security/Pausable.sol";
-import { ISemver } from "optimism/src/universal/interfaces/ISemver.sol";
-import { ILGEMigration } from "src/L1/interface/ILGEMigration.sol";
+import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
+import {SafeERC20} from "openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Pausable} from "openzeppelin/contracts/security/Pausable.sol";
+import {ISemver} from "optimism/src/universal/interfaces/ISemver.sol";
+import {ILGEMigration} from "src/L1/interface/ILGEMigration.sol";
 
 /// @title  LGE Staking
 /// @notice This contract facilitates staking of ERC20 tokens and ETH for users and allows migration of staked assets to
@@ -117,7 +117,7 @@ contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
         require(!migrationActivated(), "LGE Staking: May not deposit once migration has been activated.");
         require(msg.value > 0, "LGE Staking: May not deposit nothing.");
         require(allowlisted[wstETH], "LGE Staking: Token must be allowlisted.");
-        uint256 stETHAmount = IstETH(stETH).submit{ value: msg.value }(address(0));
+        uint256 stETHAmount = IstETH(stETH).submit{value: msg.value}(address(0));
         uint256 wstETHAmount = IwstETH(wstETH).wrap(stETHAmount);
         require(
             totalDeposited[wstETH] + wstETHAmount < depositCap[wstETH],

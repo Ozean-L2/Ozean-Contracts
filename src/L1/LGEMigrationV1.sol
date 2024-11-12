@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-import { SafeERC20 } from "openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IERC20 } from "openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ReentrancyGuard } from "openzeppelin/contracts/security/ReentrancyGuard.sol";
-import { ILGEMigration } from "./interface/ILGEMigration.sol";
+import {SafeERC20} from "openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ILGEMigration} from "./interface/ILGEMigration.sol";
 
 /// @title  LGE Migration V1
 /// @notice This contract facilitates the migration of staked tokens from the LGE Staking pool
@@ -44,11 +44,7 @@ contract LGEMigrationV1 is ILGEMigration, ReentrancyGuard {
     /// @param _l2Destination The address which will be credited the tokens on Ozean.
     /// @param _tokens The tokens being migrated to Ozean from the LGE Staking contract.
     /// @param _amounts The amounts of each token to be migrated to Ozean for the _user
-    function migrate(
-        address _l2Destination,
-        address[] calldata _tokens,
-        uint256[] calldata _amounts
-    )
+    function migrate(address _l2Destination, address[] calldata _tokens, uint256[] calldata _amounts)
         external
         nonReentrant
     {
@@ -87,6 +83,5 @@ interface IL1StandardBridge {
         uint256 _amount,
         uint32 _minGasLimit,
         bytes calldata _extraData
-    )
-        external;
+    ) external;
 }

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-import { IERC20 } from "openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ReentrancyGuard } from "openzeppelin/contracts/security/ReentrancyGuard.sol";
-import { Initializable } from "openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {IERC20} from "openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Initializable} from "openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /// @title  Ozean USD (ozUSD) Token Contract
 /// @notice This contract implements a rebasing token (ozUSD), where token balances are dynamic and calculated
@@ -71,7 +71,7 @@ contract OzUSD is IERC20, ReentrancyGuard, Initializable {
 
     /// EXTERNAL ///
 
-    receive() external payable { }
+    receive() external payable {}
 
     /// @notice Distributes the yield to the protocol by updating the total pooled USDX balance.
     function distributeYield() external payable nonReentrant {
@@ -154,11 +154,7 @@ contract OzUSD is IERC20, ReentrancyGuard, Initializable {
     /// @param  _sharesAmount The number of shares to transfer.
     /// @return uint256 The amount of ozUSD tokens equivalent to the transferred shares.
     /// @dev    The `_sharesAmount` argument is the amount of shares, not tokens.
-    function transferSharesFrom(
-        address _sender,
-        address _recipient,
-        uint256 _sharesAmount
-    )
+    function transferSharesFrom(address _sender, address _recipient, uint256 _sharesAmount)
         external
         nonReentrant
         returns (uint256)
@@ -197,7 +193,7 @@ contract OzUSD is IERC20, ReentrancyGuard, Initializable {
         uint256 sharesToBurn = getSharesByPooledUSDX(_ozUSDAmount);
         _burnShares(_from, sharesToBurn);
 
-        (bool s,) = _from.call{ value: _ozUSDAmount }("");
+        (bool s,) = _from.call{value: _ozUSDAmount}("");
         assert(s);
 
         _emitTransferEvents(msg.sender, address(0), _ozUSDAmount, sharesToBurn);
