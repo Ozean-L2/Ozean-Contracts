@@ -1,2 +1,3 @@
 PRIVATE_KEY=0x00
-RPC_URL=https://eth.drpc.org
+L1_RPC_URL=https://1rpc.io/sepolia
+L2_RPC_URL=https://ozean-testnet.rpc.caldera.xyz/http
