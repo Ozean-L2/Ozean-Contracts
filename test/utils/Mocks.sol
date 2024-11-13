@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
 contract TestERC20 is ERC20 {
-    constructor() ERC20("TEST", "TST", 18) { }
+    constructor() ERC20("TEST", "TST", 18) {}
 
     function mint(address to, uint256 value) public {
         _mint(to, value);
@@ -12,7 +12,7 @@ contract TestERC20 is ERC20 {
 }
 
 contract TestERC20Decimals is ERC20 {
-    constructor(uint8 _decimals) ERC20("TEST", "TST", _decimals) { }
+    constructor(uint8 _decimals) ERC20("TEST", "TST", _decimals) {}
 
     function mint(address to, uint256 value) public {
         _mint(to, value);
@@ -20,7 +20,7 @@ contract TestERC20Decimals is ERC20 {
 }
 
 contract TestStETH is ERC20 {
-    constructor() ERC20("staked ETH", "STETH", 18) { }
+    constructor() ERC20("staked ETH", "STETH", 18) {}
 
     function submit(address _referral) external payable returns (uint256) {
         _referral;

@@ -282,13 +282,7 @@ contract USDXBridgeForkTest is TestSetup {
 
     /// HELPERS ///
 
-    function _getOpaqueData(
-        uint256 _mint,
-        uint256 _value,
-        uint64 _gasLimit,
-        bool _isCreation,
-        bytes memory _data
-    )
+    function _getOpaqueData(uint256 _mint, uint256 _value, uint64 _gasLimit, bool _isCreation, bytes memory _data)
         internal
         pure
         returns (bytes memory)

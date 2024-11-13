@@ -3,3 +3,4 @@ out
 .env
 broadcast
 venv
+lcov.info

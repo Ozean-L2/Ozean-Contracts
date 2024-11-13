@@ -117,8 +117,8 @@ contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
         require(!migrationActivated(), "LGE Staking: May not deposit once migration has been activated.");
         require(msg.value > 0, "LGE Staking: May not deposit nothing.");
         require(allowlisted[wstETH], "LGE Staking: Token must be allowlisted.");
-        uint256 stETHAmount = IstETH(stETH).submit{value: msg.value}(address(0));
-        uint256 wstETHAmount = IwstETH(wstETH).wrap(stETHAmount);
+        IstETH(stETH).submit{value: msg.value}(address(0));
+        uint256 wstETHAmount = IwstETH(wstETH).wrap(IstETH(stETH).balanceOf(address(this)));
         require(
             totalDeposited[wstETH] + wstETHAmount < depositCap[wstETH],
             "LGE Staking: deposit amount exceeds deposit cap."
