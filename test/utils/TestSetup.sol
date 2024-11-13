@@ -11,6 +11,8 @@ import {IStETH, IWstETH} from "test/utils/TestInterfaces.sol";
 import {USDXBridge} from "src/L1/USDXBridge.sol";
 import {LGEStaking} from "src/L1/LGEStaking.sol";
 import {LGEMigrationV1} from "src/L1/LGEMigrationV1.sol";
+import {OzUSD} from "src/L2/OzUSD.sol";
+import {WozUSD} from "src/L2/WozUSD.sol";
 
 contract TestSetup is Test {
     /// L1
@@ -30,6 +32,9 @@ contract TestSetup is Test {
     LGEMigrationV1 public lgeMigration;
 
     /// L2
+
+    OzUSD public ozUSD;
+    WozUSD public wozUSD;
 
     /// Universal
     address public hexTrust;

@@ -8,7 +8,7 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 contract OzUSDDeploy is ScriptUtils {
     OzUSD public implementation;
     TransparentUpgradeableProxy public proxy;
-    address public admin = makeAddr("admin");
+    address public hexTrust = makeAddr("HEX_TRUST");
     uint256 public initialSharesAmount = 1e18;
 
     function run() external broadcast {
@@ -17,7 +17,7 @@ contract OzUSDDeploy is ScriptUtils {
 
         /// Deploy Proxy
         proxy = new TransparentUpgradeableProxy{value: initialSharesAmount}(
-            address(implementation), admin, abi.encodeWithSignature("initialize(uint256)", initialSharesAmount)
+            address(implementation), hexTrust, abi.encodeWithSignature("initialize(uint256)", initialSharesAmount)
         );
     }
 }
