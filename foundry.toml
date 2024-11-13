@@ -1,5 +1,6 @@
 [profile.default]
 solc-version = "0.8.15"
+evm_version = "cancun"
 libs = ['lib']
 optimizer = true
 optimizer_runs = 420_000

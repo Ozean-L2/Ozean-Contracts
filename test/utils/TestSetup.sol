@@ -9,6 +9,8 @@ import {IUSDX, IERC20Faucet, IERC20} from "test/utils/TestInterfaces.sol";
 import {USDXBridge} from "src/L1/USDXBridge.sol";
 
 contract TestSetup is Test {
+    /// L1
+    address public constant faucetOwner = 0xC959483DBa39aa9E78757139af0e9a2EDEb3f42D;
     USDXBridge public usdxBridge;
     OptimismPortal public optimismPortal;
     SystemConfig public systemConfig;
@@ -16,6 +18,10 @@ contract TestSetup is Test {
     IERC20Faucet public usdc;
     IERC20Faucet public usdt;
     IERC20Faucet public dai;
+
+    /// L2
+    
+    /// Universal
     address public hexTrust;
     address public alice;
     address public bob;
@@ -52,11 +58,10 @@ contract TestSetup is Test {
         _distributeTokens(bob);
     }
 
-    function _distributeTokens(address _user) internal prank(0xC959483DBa39aa9E78757139af0e9a2EDEb3f42D) {
-        usdc.mint(_user, 1e24);
-        usdt.mint(_user, 1e24);
+    function _distributeTokens(address _user) internal prank(faucetOwner) {
+        usdc.mint(_user, 1e12);
+        usdt.mint(_user, 1e12);
         dai.mint(_user, 1e24);
-        /// Environment
     }
 
     /// FORK L2 ///
@@ -65,5 +70,6 @@ contract TestSetup is Test {
         string memory rpcURL = vm.envString("L2_RPC_URL");
         uint256 l2Fork = vm.createFork(rpcURL);
         vm.selectFork(l2Fork);
+        /// Environment
     }
 }

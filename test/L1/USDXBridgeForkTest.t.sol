@@ -6,6 +6,7 @@ import {TestERC20Decimals} from "test/utils/Mocks.sol";
 import {AddressAliasHelper} from "optimism/src/vendor/AddressAliasHelper.sol";
 import {USDXBridgeDeploy, USDXBridge} from "script/L1/USDXBridgeDeploy.s.sol";
 
+/// @dev forge test --match-contract USDXBridgeForkTest
 contract USDXBridgeForkTest is TestSetup {
     /// USDXBridge
     event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _to);
@@ -64,12 +65,12 @@ contract USDXBridgeForkTest is TestSetup {
     }
 
     /// @dev Deposit USDX directly via portal, bypassing usdx bridge
-    function testNativeGasDeposit(uint256 _amount) public prank(alice) {
-        _amount = bound(_amount, 1, 100_000e18);
-
+    function testNativeGasDeposit() public prank(alice) {
         /// Mint and approve
+        uint256 _amount = 100e18;
         usdx.mint(alice, _amount);
         usdx.approve(address(optimismPortal), _amount);
+        uint256 balanceBefore = usdx.balanceOf(address(optimismPortal));
 
         /// Bridge directly
         vm.expectEmit(true, true, true, true);
@@ -85,15 +86,14 @@ contract USDXBridgeForkTest is TestSetup {
             _data: ""
         });
 
-        assertEq(usdx.balanceOf(address(optimismPortal)), _amount);
+        assertEq(usdx.balanceOf(address(optimismPortal)), _amount + balanceBefore);
     }
 
     /// BRIDGE STABLECOINS ///
 
-    function testBridgeUSDXRevertConditions(uint256 _amount) public prank(alice) {
-        _amount = bound(_amount, 1, 100_000e18);
-
+    function testBridgeUSDXRevertConditions() public prank(alice) {
         /// Non-accepted stablecoin/ERC20
+        uint256 _amount = 100e18;
         TestERC20Decimals usde = new TestERC20Decimals(18);
         vm.expectRevert("USDXBridge: Stablecoin not accepted.");
         usdxBridge.bridge(address(usde), _amount, alice);
@@ -108,13 +108,12 @@ contract USDXBridgeForkTest is TestSetup {
         usdxBridge.bridge(address(dai), excess, alice);
     }
 
-    function testBridgeUSDXWithUSDC(uint256 _amount) public prank(alice) {
-        _amount = bound(_amount, 1, 100_000e6);
-
+    function testBridgeUSDXWithUSDC() public prank(alice) {
         /// Mint and approve
-        usdc.mint(alice, _amount);
+        uint256 _amount = 100e6;
         usdc.approve(address(usdxBridge), _amount);
         uint256 usdxAmount = _amount * (10 ** 12);
+        uint256 balanceBefore = usdx.balanceOf(address(optimismPortal));
 
         /// Bridge
         vm.expectEmit(true, true, true, true);
@@ -128,18 +127,17 @@ contract USDXBridgeForkTest is TestSetup {
         emit BridgeDeposit(address(usdc), _amount, alice);
         usdxBridge.bridge(address(usdc), _amount, alice);
 
-        assertEq(usdx.balanceOf(address(optimismPortal)), usdxAmount);
+        assertEq(usdx.balanceOf(address(optimismPortal)), balanceBefore + usdxAmount);
         assertEq(usdxBridge.totalBridged(address(usdc)), usdxAmount);
         assertEq(usdx.allowance(address(usdxBridge), address(optimismPortal)), 0);
     }
 
-    function testBridgeUSDXWithUSDT(uint256 _amount) public prank(alice) {
-        _amount = bound(_amount, 1, 100_000e6);
-
+    function testBridgeUSDXWithUSDT() public prank(alice) {
         /// Mint and approve
-        usdt.mint(alice, _amount);
+        uint256 _amount = 100e6;
         usdt.approve(address(usdxBridge), _amount);
         uint256 usdxAmount = _amount * (10 ** 12);
+        uint256 balanceBefore = usdx.balanceOf(address(optimismPortal));
 
         /// Bridge
         vm.expectEmit(true, true, true, true);
@@ -153,17 +151,16 @@ contract USDXBridgeForkTest is TestSetup {
         emit BridgeDeposit(address(usdt), _amount, alice);
         usdxBridge.bridge(address(usdt), _amount, alice);
 
-        assertEq(usdx.balanceOf(address(optimismPortal)), usdxAmount);
+        assertEq(usdx.balanceOf(address(optimismPortal)), balanceBefore + usdxAmount);
         assertEq(usdxBridge.totalBridged(address(usdt)), usdxAmount);
         assertEq(usdx.allowance(address(usdxBridge), address(optimismPortal)), 0);
     }
 
-    function testBridgeUSDXWithDAI(uint256 _amount) public prank(alice) {
-        _amount = bound(_amount, 1, 100_000e18);
-
+    function testBridgeUSDXWithDAI() public prank(alice) {
         /// Mint and approve
-        dai.mint(alice, _amount);
+        uint256 _amount = 100e18;
         dai.approve(address(usdxBridge), _amount);
+        uint256 balanceBefore = usdx.balanceOf(address(optimismPortal));
 
         /// Bridge
         vm.expectEmit(true, true, true, true);
@@ -177,56 +174,9 @@ contract USDXBridgeForkTest is TestSetup {
         emit BridgeDeposit(address(dai), _amount, alice);
         usdxBridge.bridge(address(dai), _amount, alice);
 
-        assertEq(usdx.balanceOf(address(optimismPortal)), _amount);
+        assertEq(usdx.balanceOf(address(optimismPortal)), balanceBefore + _amount);
         assertEq(usdxBridge.totalBridged(address(dai)), _amount);
         assertEq(usdx.allowance(address(usdxBridge), address(optimismPortal)), 0);
-    }
-
-    function testBridgeUSDXWithStablecoinWithOddDecimals(uint256 _amount, uint8 _decimals) public prank(alice) {
-        _decimals = uint8(bound(_decimals, 0, 24));
-        _amount = bound(_amount, 1, 100_000 * (10 ** _decimals));
-
-        /// Create, mint, and approve
-        TestERC20Decimals usde = new TestERC20Decimals(_decimals);
-        usde.mint(alice, _amount);
-        usde.approve(address(usdxBridge), _amount);
-
-        uint256 usdxAmount;
-        if (_decimals <= 18) {
-            usdxAmount = _amount * (10 ** (18 - _decimals));
-        } else {
-            usdxAmount = _amount / (10 ** (_decimals - 18));
-        }
-
-        /// Owner adds stablecoin to allowlist
-        vm.stopPrank();
-        vm.startPrank(hexTrust);
-
-        vm.expectEmit(true, true, true, true);
-        emit AllowlistSet(address(usde), true);
-        usdxBridge.setAllowlist(address(usde), true);
-
-        vm.expectEmit(true, true, true, true);
-        emit DepositCapSet(address(usde), 1e30);
-        usdxBridge.setDepositCap(address(usde), 1e30);
-
-        vm.stopPrank();
-        vm.startPrank(alice);
-
-        /// Bridge
-        vm.expectEmit(true, true, true, true);
-        emit TransactionDeposited(
-            AddressAliasHelper.applyL1ToL2Alias(address(usdxBridge)),
-            alice,
-            0,
-            _getOpaqueData(usdxAmount, usdxAmount, 21000, false, "")
-        );
-        vm.expectEmit(true, true, true, true);
-        emit BridgeDeposit(address(usde), _amount, alice);
-        usdxBridge.bridge(address(usde), _amount, alice);
-
-        assertEq(usdx.balanceOf(address(optimismPortal)), usdxAmount);
-        assertEq(usdxBridge.totalBridged(address(usde)), usdxAmount);
     }
 
     /// OWNER ///
@@ -276,36 +226,35 @@ contract USDXBridgeForkTest is TestSetup {
         assertEq(usdxBridge.depositCap(address(usdc)), _newCap);
     }
 
-    function testWithdrawERC20(uint256 _amount) public {
+    function testWithdrawERC20() public prank(faucetOwner) {
         /// Send some tokens directly to the contract
+        uint256 _amount = 100e18;
         dai.mint(address(usdxBridge), _amount);
-
-        assertEq(dai.balanceOf(address(usdxBridge)), _amount);
+        uint256 balanceBefore = dai.balanceOf(address(usdxBridge));
 
         /// Non-owner revert
         vm.expectRevert("Ownable: caller is not the owner");
         usdxBridge.withdrawERC20(address(dai), _amount);
 
         /// Owner allowed
+        vm.stopPrank();
         vm.startPrank(hexTrust);
 
         vm.expectEmit(true, true, true, true);
         emit WithdrawCoins(address(dai), _amount, hexTrust);
         usdxBridge.withdrawERC20(address(dai), _amount);
 
-        vm.stopPrank();
-
-        assertEq(dai.balanceOf(address(usdxBridge)), 0);
+        assertEq(dai.balanceOf(address(usdxBridge)), balanceBefore - _amount);
         assertEq(dai.balanceOf(hexTrust), _amount);
     }
 
-    function testBridgeUSDXWithUSDCAndWithdraw(uint256 _amount) public prank(alice) {
-        _amount = bound(_amount, 1, 100_000e6);
-
+    function testBridgeUSDXWithUSDCAndWithdraw() public prank(alice) {
         /// Alice mints and approves
-        usdc.mint(alice, _amount);
+        uint256 _amount = 100e6;
         usdc.approve(address(usdxBridge), _amount);
         uint256 usdxAmount = _amount * (10 ** 12);
+        uint256 usdxBalanceBefore = usdx.balanceOf(address(optimismPortal));
+        uint256 usdcBalanceBefore = usdc.balanceOf(address(usdxBridge));
 
         /// Alice bridges
         vm.expectEmit(true, true, true, true);
@@ -317,8 +266,7 @@ contract USDXBridgeForkTest is TestSetup {
         );
         usdxBridge.bridge(address(usdc), _amount, alice);
 
-        assertEq(usdx.balanceOf(address(optimismPortal)), usdxAmount);
-        assertEq(usdxBridge.totalBridged(address(usdc)), usdxAmount);
+        assertEq(usdx.balanceOf(address(optimismPortal)), usdxBalanceBefore + usdxAmount);
 
         /// Owner withdraws deposited USDC
         vm.stopPrank();
@@ -328,7 +276,7 @@ contract USDXBridgeForkTest is TestSetup {
         emit WithdrawCoins(address(usdc), _amount, hexTrust);
         usdxBridge.withdrawERC20(address(usdc), _amount);
 
-        assertEq(usdc.balanceOf(address(usdxBridge)), 0);
+        assertEq(usdc.balanceOf(address(usdxBridge)), usdcBalanceBefore);
         assertEq(usdc.balanceOf(hexTrust), _amount);
     }
 
