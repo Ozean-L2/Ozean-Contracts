@@ -32,7 +32,51 @@ contract OzUSDForkTest is TestSetup {
         assertEq(ozUSD.decimals(), 18);
     }
 
+    function testInitializeRevertConditions() public {
+        uint256 initialSharesAmount = 1e18;
+        vm.expectRevert("OzUSD: Incorrect value.");
+        new TransparentUpgradeableProxy{value: initialSharesAmount - 1}(
+            address(implementation), hexTrust, abi.encodeWithSignature("initialize(uint256)", initialSharesAmount)
+        );
+    }
+
     /// REBASE ///
+
+    function testMintRevertConditions() public prank(alice) {        
+        /// Amount zero
+        vm.expectRevert("OzUSD: Amount zero.");
+        ozUSD.mintOzUSD{ value: 1e18 }(alice, 0);
+
+        /// Insufficient amount
+        vm.expectRevert("OzUSD: Insufficient USDX transfer.");
+        ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18 + 1);
+
+        /// Mint to zero address
+        vm.expectRevert("OzUSD: Mint to zero address.");
+        ozUSD.mintOzUSD{ value: 1e18 }(address(0), 1e18);
+    }
+
+    function testRedeemOzUSDRevertConditions() public prank(alice) {
+        uint256 _amountA = 100 ether;
+
+        assertEq(address(ozUSD).balance, 1e18);
+        assertEq(ozUSD.getPooledUSDXByShares(_amountA), _amountA);
+
+        ozUSD.mintOzUSD{ value: _amountA }(alice, _amountA);
+
+        assertEq(address(ozUSD).balance, 1e18 + _amountA);
+        assertEq(ozUSD.getPooledUSDXByShares(_amountA), _amountA);
+
+        ozUSD.approve(alice, ~uint256(0));
+        
+        /// Amount zero
+        vm.expectRevert("OzUSD: Amount zero.");
+        ozUSD.redeemOzUSD(alice, 0);
+
+        /// Burn more than allowance
+        vm.expectRevert("OzUSD: Balance exceeded.");
+        ozUSD.redeemOzUSD(alice, 1e30);
+    }
 
     function testRebase() public prank(alice) {
         uint256 amount = 100 ether;
@@ -116,6 +160,19 @@ contract OzUSDForkTest is TestSetup {
 
     /// ERC20 ///
 
+    function testApproveRevertConditions() public prank(address(0)) {
+        /// Approve from zero address
+        vm.expectRevert("OzUSD: Approve from zero address.");
+        ozUSD.approve(alice, 1e18);
+
+        vm.stopPrank();
+        vm.startPrank(alice);
+        
+        /// Approve to zero address
+        vm.expectRevert("OzUSD: Approve to zero address.");
+        ozUSD.approve(address(0), 1e18);
+    }
+
     function testApproveAndTransferFrom() public prank(alice) {
         uint256 sharesAmount = 1e18;
 
@@ -146,22 +203,60 @@ contract OzUSDForkTest is TestSetup {
         ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18);
         assertEq(ozUSD.balanceOf(alice), 1e18);
 
-        // Increase bob's allowance
+        // Increase Bob's allowance
         ozUSD.increaseAllowance(bob, 0.5e18);
         assertEq(ozUSD.allowance(alice, bob), 0.5e18);
 
-        // Decrease bob's allowance
+        // Decrease Bob's allowance
         ozUSD.decreaseAllowance(bob, 0.2e18);
         assertEq(ozUSD.allowance(alice, bob), 0.3e18);
+
+        /// Decrease Bob's allowance revert
+        vm.expectRevert("OzUSD: Allowance below value.");
+        ozUSD.decreaseAllowance(bob, 0.4e18);
+    }
+
+    function testTransferSharesRevertConditions() public prank(address(0)) {
+        /// Transfer from zero address
+        vm.expectRevert("OzUSD: Transfer from zero address.");
+        ozUSD.transferShares(alice, 1e18);
+
+        /// Transfer to zero address
+        vm.stopPrank();
+        vm.startPrank(alice);
+
+        vm.expectRevert("OzUSD: Transfer to zero address.");
+        ozUSD.transferShares(address(0), 1e18);
+
+        /// Transfer to contract.
+        vm.expectRevert("OzUSD: Transfer to this contract.");
+        ozUSD.transferShares(address(ozUSD), 1e18);
     }
 
     function testTransferShares() public prank(alice) {
         // Mint ozUSD
         ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18);
+        assertEq(ozUSD.sharesOf(alice), 1e18);
 
         // Transfer shares from alice to bob
         uint256 sharesToTransfer = 0.5e18;
         uint256 tokensTransferred = ozUSD.transferShares(bob, sharesToTransfer);
+        
+        // Check balances after the transfer
+        assertEq(ozUSD.balanceOf(alice), 0.5e18);
+        assertEq(ozUSD.balanceOf(bob), tokensTransferred);
+        assertEq(ozUSD.sharesOf(alice), 0.5e18);
+        assertEq(ozUSD.sharesOf(bob), 0.5e18);
+    }
+
+    function testTransferSharesFrom() public prank(alice) {
+        // Mint ozUSD
+        ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18);
+
+        // Transfer shares from alice to bob
+        uint256 sharesToTransfer = 0.5e18;
+        ozUSD.approve(alice, ~uint256(0));
+        uint256 tokensTransferred = ozUSD.transferSharesFrom(alice, bob, sharesToTransfer);
 
         // Check balances after the transfer
         assertEq(ozUSD.balanceOf(alice), 0.5e18);
@@ -173,7 +268,7 @@ contract OzUSDForkTest is TestSetup {
         ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18);
 
         // Attempt to transfer more than alice's balance
-        vm.expectRevert("OzUSD: BALANCE_EXCEEDED");
+        vm.expectRevert("OzUSD: Balance exceeded.");
         ozUSD.transfer(bob, 2e18); // Transfer amount exceeds balance
     }
 
@@ -203,7 +298,7 @@ contract OzUSDForkTest is TestSetup {
         // Bob tries to transfer more than allowed, should fail
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert("OzUSD: ALLOWANCE_EXCEEDED");
+        vm.expectRevert("OzUSD: Allowance exceeded.");
         ozUSD.transferFrom(alice, bob, 1e18);
     }
 

@@ -72,6 +72,23 @@ contract LGEStakingForkTest is TestSetup {
         }
     }
 
+    function testDeployRevertWithUnequalArrayLengths() public {
+        /// LGE Staking
+        l1Addresses = new address[](3);
+        l1Addresses[0] = address(usdc);
+        l1Addresses[1] = address(usdt);
+        l1Addresses[2] = address(dai);
+        depositCaps = new uint256[](2);
+        depositCaps[0] = 1e30;
+        depositCaps[1] = 1e30;
+        vm.expectRevert("LGE Staking: Tokens array length must equal the Deposit Caps array length.");
+        lgeStaking = new LGEStaking(hexTrust, address(stETH), address(wstETH), l1Addresses, depositCaps);
+
+        /// LGE Migration
+        vm.expectRevert("LGE Migration: L1 addresses array length must equal the L2 addresses array length.");
+        lgeMigration = new LGEMigrationV1(address(l1StandardBridge), address(lgeStaking), l1Addresses, l2Addresses);
+    }
+
     /// DEPOSIT ERC20 ///
 
     function testDepositERC20FailureConditions() public prank(alice) {
@@ -321,6 +338,7 @@ contract LGEStakingForkTest is TestSetup {
 
     function testSetAllowlist() public {
         TestERC20Decimals usdd = new TestERC20Decimals(18);
+        usdd.mint(alice, 1e18);
 
         /// Non-owner revert
         vm.expectRevert("Ownable: caller is not the owner");
