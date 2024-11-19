@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-import {TestSetup} from "test/utils/TestSetup.sol";
+import {TestSetup, USDXBridge} from "test/utils/TestSetup.sol";
 import {TestERC20Decimals} from "test/utils/Mocks.sol";
 import {LGEStakingDeploy, LGEStaking} from "script/L1/LGEStakingDeploy.s.sol";
 import {LGEMigrationDeploy, LGEMigrationV1} from "script/L1/LGEMigrationDeploy.s.sol";
@@ -27,6 +27,9 @@ contract LGEStakingForkTest is TestSetup {
         super.setUp();
         _forkL1();
 
+        /// @dev Replace USDXBridge for migration tests
+        usdxBridge = USDXBridge(0x084C27a0bE5dF26ed47F00678027A6E76B14a0B4);
+
         /// Deploy LGEStaking
         l1Addresses = new address[](4);
         l1Addresses[0] = address(usdc);
@@ -46,12 +49,24 @@ contract LGEStakingForkTest is TestSetup {
         lgeStaking = stakingDeployScript.lgeStaking();
 
         /// Deploy LGEMigration
-        /// @dev not the correct L2 address
+        /// @dev not the correct L2 addresses except for wstETH
         l2Addresses = new address[](4);
         l2Addresses[0] = address(usdc);
+        l2Addresses[1] = address(usdt);
+        l2Addresses[2] = address(0);
+        l2Addresses[3] = 0x0733Df3e178c32f44B85B731D5475156a6E16391;
 
         LGEMigrationDeploy migrationDeployScript = new LGEMigrationDeploy();
-        migrationDeployScript.setUp(address(l1StandardBridge), address(lgeStaking), l1Addresses, l2Addresses);
+        migrationDeployScript.setUp(
+            address(l1StandardBridge), 
+            address(l1LidoTokensBridge),
+            address(usdxBridge),
+            address(lgeStaking),
+            address(usdc),
+            address(wstETH),
+            l1Addresses, 
+            l2Addresses
+        );
         migrationDeployScript.run();
         lgeMigration = migrationDeployScript.lgeMigration();
     }
@@ -86,7 +101,16 @@ contract LGEStakingForkTest is TestSetup {
 
         /// LGE Migration
         vm.expectRevert("LGE Migration: L1 addresses array length must equal the L2 addresses array length.");
-        lgeMigration = new LGEMigrationV1(address(l1StandardBridge), address(lgeStaking), l1Addresses, l2Addresses);
+        lgeMigration = new LGEMigrationV1(
+            address(l1StandardBridge), 
+            address(l1LidoTokensBridge),
+            address(usdxBridge),
+            address(lgeStaking),
+            address(usdc),
+            address(wstETH),
+            l1Addresses, 
+            l2Addresses
+        );
     }
 
     /// DEPOSIT ERC20 ///
@@ -247,16 +271,11 @@ contract LGEStakingForkTest is TestSetup {
         usdc.approve(address(lgeStaking), _amount0);
         lgeStaking.depositERC20(address(usdc), _amount0);
 
-        assertEq(lgeStaking.balance(address(usdc), alice), _amount0);
-        assertEq(lgeStaking.totalDeposited(address(usdc)), _amount0);
-        assertEq(usdc.balanceOf(address(lgeStaking)), _amount0);
-
         usdt.approve(address(lgeStaking), _amount0);
         lgeStaking.depositERC20(address(usdt), _amount0);
 
-        assertEq(lgeStaking.balance(address(usdt), alice), _amount0);
-        assertEq(lgeStaking.totalDeposited(address(usdt)), _amount0);
-        assertEq(usdt.balanceOf(address(lgeStaking)), _amount0);
+        dai.approve(address(lgeStaking), _amount0);
+        lgeStaking.depositERC20(address(dai), _amount0);
 
         /// Only LGE may call
         vm.expectRevert("LGE Migration: Only the staking contract can call this function.");
@@ -294,13 +313,87 @@ contract LGEStakingForkTest is TestSetup {
         lgeStaking.migrate(alice, tokens);
 
         /// L2 Address not set
-        tokens[0] = address(usdt);
+        tokens[0] = address(dai);
 
         vm.expectRevert("LGE Migration: L2 contract address not set for migration.");
         lgeStaking.migrate(alice, tokens);
     }
 
     function testMigrateSuccessConditions() public prank(alice) {
+        /// Setup
+        uint256 _amount0 = 100e6;
+        usdt.approve(address(lgeStaking), _amount0);
+        lgeStaking.depositERC20(address(usdt), _amount0);
+
+        assertEq(lgeStaking.balance(address(usdt), alice), _amount0);
+        assertEq(lgeStaking.totalDeposited(address(usdt)), _amount0);
+        assertEq(usdt.balanceOf(address(lgeStaking)), _amount0);
+
+        /// Set Migration
+        vm.stopPrank();
+        vm.startPrank(hexTrust);
+        lgeStaking.setMigrationContract(address(lgeMigration));
+        assertEq(lgeStaking.migrationActivated(), true);
+        vm.stopPrank();
+        vm.startPrank(alice);
+
+        /// Migrate
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(usdt);
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = _amount0;
+
+        vm.expectEmit(true, true, true, true);
+        emit TokensMigrated(alice, alice, tokens, amounts);
+        lgeStaking.migrate(alice, tokens);
+
+        assertEq(lgeStaking.balance(address(usdt), alice), 0);
+        assertEq(lgeStaking.totalDeposited(address(usdt)), 0);
+        assertEq(usdt.balanceOf(address(lgeStaking)), 0);
+    }
+
+    function testMigrateSeveralSuccessConditions() public prank(alice) {
+        /// Setup
+        uint256 _amount0 = 100e6;
+        uint256 _amount1 = 100e18;
+
+        usdt.approve(address(lgeStaking), _amount0);
+        lgeStaking.depositERC20(address(usdt), _amount0);
+
+        usdc.approve(address(lgeStaking), _amount0);
+        lgeStaking.depositERC20(address(usdc), _amount0);
+
+        wstETH.approve(address(lgeStaking), _amount1);
+        lgeStaking.depositERC20(address(wstETH), _amount1);
+
+        /// Set Migration
+        vm.stopPrank();
+        vm.startPrank(hexTrust);
+        lgeStaking.setMigrationContract(address(lgeMigration));
+        assertEq(lgeStaking.migrationActivated(), true);
+        vm.stopPrank();
+        vm.startPrank(alice);
+
+        /// Migrate
+        address[] memory tokens = new address[](3);
+        tokens[0] = address(usdc);
+        tokens[1] = address(usdt);
+        tokens[2] = address(wstETH);
+        uint256[] memory amounts = new uint256[](3);
+        amounts[0] = _amount0;
+        amounts[1] = _amount0;
+        amounts[2] = _amount1;
+
+        vm.expectEmit(true, true, true, true);
+        emit TokensMigrated(alice, alice, tokens, amounts);
+        lgeStaking.migrate(alice, tokens);
+
+        assertEq(lgeStaking.balance(address(usdt), alice), 0);
+        assertEq(lgeStaking.totalDeposited(address(usdt)), 0);
+        assertEq(usdt.balanceOf(address(lgeStaking)), 0);
+    }
+
+    function testMigrateUSDCSuccessConditions() public prank(alice) {
         /// Setup
         uint256 _amount0 = 100e6;
         usdc.approve(address(lgeStaking), _amount0);
@@ -310,7 +403,7 @@ contract LGEStakingForkTest is TestSetup {
         assertEq(lgeStaking.totalDeposited(address(usdc)), _amount0);
         assertEq(usdc.balanceOf(address(lgeStaking)), _amount0);
 
-        /// Migrate
+        /// Set Migration
         vm.stopPrank();
         vm.startPrank(hexTrust);
         lgeStaking.setMigrationContract(address(lgeMigration));
@@ -318,10 +411,13 @@ contract LGEStakingForkTest is TestSetup {
         vm.stopPrank();
         vm.startPrank(alice);
 
+        /// Migrate
         address[] memory tokens = new address[](1);
         tokens[0] = address(usdc);
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = _amount0;
+
+        uint256 balanceBefore = usdx.balanceOf(address(optimismPortal));
 
         vm.expectEmit(true, true, true, true);
         emit TokensMigrated(alice, alice, tokens, amounts);
@@ -331,7 +427,40 @@ contract LGEStakingForkTest is TestSetup {
         assertEq(lgeStaking.totalDeposited(address(usdc)), 0);
         assertEq(usdc.balanceOf(address(lgeStaking)), 0);
 
-        /// @dev Flesh this out a bit more
+        assertEq(usdx.balanceOf(address(optimismPortal)), balanceBefore + (_amount0 * (10 ** 12)));
+    }
+
+    function testMigrateWSTETHSuccessConditions() public prank(alice) {
+        /// Setup
+        uint256 _amount0 = 100e18;
+        wstETH.approve(address(lgeStaking), _amount0);
+        lgeStaking.depositERC20(address(wstETH), _amount0);
+
+        assertEq(lgeStaking.balance(address(wstETH), alice), _amount0);
+        assertEq(lgeStaking.totalDeposited(address(wstETH)), _amount0);
+        assertEq(wstETH.balanceOf(address(lgeStaking)), _amount0);
+
+        /// Set Migration
+        vm.stopPrank();
+        vm.startPrank(hexTrust);
+        lgeStaking.setMigrationContract(address(lgeMigration));
+        assertEq(lgeStaking.migrationActivated(), true);
+        vm.stopPrank();
+        vm.startPrank(alice);
+
+        /// Migrate
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(wstETH);
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = _amount0;
+
+        vm.expectEmit(true, true, true, true);
+        emit TokensMigrated(alice, alice, tokens, amounts);
+        lgeStaking.migrate(alice, tokens);
+
+        assertEq(lgeStaking.balance(address(wstETH), alice), 0);
+        assertEq(lgeStaking.totalDeposited(address(wstETH)), 0);
+        assertEq(wstETH.balanceOf(address(lgeStaking)), 0);
     }
 
     /// OWNER ///
