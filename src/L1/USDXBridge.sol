@@ -41,6 +41,9 @@ contract USDXBridge is Ownable, ReentrancyGuard, ISemver {
     /// @dev    stablecoin => amount
     mapping(address => uint256) public totalBridged;
 
+    /// @notice The gas limit passed to the Optimism portal when depositing USDX.
+    uint64 public gasLimit;
+
     /// EVENTS ///
 
     /// @notice An event emitted when a bridge deposit is made by a user.
@@ -55,6 +58,9 @@ contract USDXBridge is Ownable, ReentrancyGuard, ISemver {
 
     /// @notice An event emitted when the deposit cap for an ERC20 stablecoin is modified.
     event DepositCapSet(address indexed _coin, uint256 _newDepositCap);
+
+    /// @notice An event emitted when the gas limit is updated.
+    event GasLimitSet(uint64 _newGasLimit);
 
     /// SETUP ///
 
@@ -77,6 +83,7 @@ contract USDXBridge is Ownable, ReentrancyGuard, ISemver {
         _transferOwnership(_owner);
         portal = _portal;
         config = _config;
+        gasLimit = 21000;
         /// Add allow-listed stablecoins and deposit caps
         if (address(config) != address(0)) {
             uint256 length = _stablecoins.length;
@@ -119,8 +126,7 @@ contract USDXBridge is Ownable, ReentrancyGuard, ISemver {
             _to: _to,
             _mint: bridgeAmount,
             _value: bridgeAmount,
-            _gasLimit: 21000,
-            /// @dev portal.minimumGasLimit(0)
+            _gasLimit: gasLimit,
             _isCreation: false,
             _data: ""
         });
@@ -144,6 +150,13 @@ contract USDXBridge is Ownable, ReentrancyGuard, ISemver {
     function setDepositCap(address _stablecoin, uint256 _newDepositCap) external onlyOwner {
         depositCap[_stablecoin] = _newDepositCap;
         emit DepositCapSet(_stablecoin, _newDepositCap);
+    }
+
+    /// @notice This function allows the owner to modify the gas limit for USDX deposits.
+    /// @param  _newGasLimit The new gas limit to be set for transactions.
+    function setGasLimit(uint64 _newGasLimit) external onlyOwner {
+        gasLimit = _newGasLimit;
+        emit GasLimitSet(_newGasLimit);
     }
 
     /// @notice This function allows the owner to withdraw any ERC20 token held by this contract.

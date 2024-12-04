@@ -58,13 +58,14 @@ contract LGEStakingForkTest is TestSetup {
 
         LGEMigrationDeploy migrationDeployScript = new LGEMigrationDeploy();
         migrationDeployScript.setUp(
-            address(l1StandardBridge), 
+            hexTrust,
+            address(l1StandardBridge),
             address(l1LidoTokensBridge),
             address(usdxBridge),
             address(lgeStaking),
             address(usdc),
             address(wstETH),
-            l1Addresses, 
+            l1Addresses,
             l2Addresses
         );
         migrationDeployScript.run();
@@ -102,13 +103,14 @@ contract LGEStakingForkTest is TestSetup {
         /// LGE Migration
         vm.expectRevert("LGE Migration: L1 addresses array length must equal the L2 addresses array length.");
         lgeMigration = new LGEMigrationV1(
-            address(l1StandardBridge), 
+            hexTrust,
+            address(l1StandardBridge),
             address(l1LidoTokensBridge),
             address(usdxBridge),
             address(lgeStaking),
             address(usdc),
             address(wstETH),
-            l1Addresses, 
+            l1Addresses,
             l2Addresses
         );
     }
@@ -124,7 +126,12 @@ contract LGEStakingForkTest is TestSetup {
         vm.expectRevert("LGE Staking: Token must be allowlisted.");
         lgeStaking.depositERC20(address(88), 1);
 
+        /// Exceeding allowance
+        vm.expectRevert("ERC20: transfer amount exceeds allowance");
+        lgeStaking.depositERC20(address(usdc), 1e13);
+
         /// Exceeding deposit caps
+        usdc.approve(address(lgeStaking), 1e13);
         vm.expectRevert("LGE Staking: deposit amount exceeds deposit cap.");
         lgeStaking.depositERC20(address(usdc), 1e13);
 
@@ -164,27 +171,27 @@ contract LGEStakingForkTest is TestSetup {
 
         /// Amount zero
         vm.expectRevert("LGE Staking: May not deposit nothing.");
-        lgeStaking.depositETH{ value: 0 }();
+        lgeStaking.depositETH{value: 0}();
 
         /// Migration activated
         lgeStaking.setMigrationContract(address(lgeMigration));
         assertEq(lgeStaking.migrationActivated(), true);
         vm.expectRevert("LGE Staking: May not deposit once migration has been activated.");
-        lgeStaking.depositETH{ value: 1 ether }();
+        lgeStaking.depositETH{value: 1 ether}();
 
         lgeStaking.setMigrationContract(address(0));
 
         /// Not allowlisted
         lgeStaking.setAllowlist(address(wstETH), false);
         vm.expectRevert("LGE Staking: Token must be allowlisted.");
-        lgeStaking.depositETH{ value: 1 ether }();
+        lgeStaking.depositETH{value: 1 ether}();
 
         lgeStaking.setAllowlist(address(wstETH), true);
 
         /// Exceeding deposit caps
         lgeStaking.setDepositCap(address(wstETH), 1 ether);
         vm.expectRevert("LGE Staking: deposit amount exceeds deposit cap.");
-        lgeStaking.depositETH{ value: 10 ether }();
+        lgeStaking.depositETH{value: 10 ether}();
     }
 
     function testDepositETHSuccessConditions() public prank(alice) {
@@ -198,7 +205,7 @@ contract LGEStakingForkTest is TestSetup {
 
         vm.expectEmit(true, true, true, true);
         emit Deposit(address(wstETH), predictedWSTETHAmount, alice);
-        lgeStaking.depositETH{ value: _amount }();
+        lgeStaking.depositETH{value: _amount}();
 
         assertEq(lgeStaking.balance(address(wstETH), alice), predictedWSTETHAmount);
         assertEq(lgeStaking.totalDeposited(address(wstETH)), predictedWSTETHAmount);
@@ -247,7 +254,7 @@ contract LGEStakingForkTest is TestSetup {
 
         vm.expectEmit(true, true, true, true);
         emit Deposit(address(wstETH), predictedWSTETHAmount, alice);
-        lgeStaking.depositETH{ value: _amount0 }();
+        lgeStaking.depositETH{value: _amount0}();
 
         assertEq(lgeStaking.balance(address(wstETH), alice), predictedWSTETHAmount);
         assertEq(lgeStaking.totalDeposited(address(wstETH)), predictedWSTETHAmount);
@@ -463,6 +470,40 @@ contract LGEStakingForkTest is TestSetup {
         assertEq(wstETH.balanceOf(address(lgeStaking)), 0);
     }
 
+    function testRecoverTokens() public prank(alice) {
+        /// Setup
+        uint256 _amount0 = 100e18;
+        wstETH.transfer(address(lgeMigration), _amount0);
+        assertEq(wstETH.balanceOf(address(lgeMigration)), _amount0);
+
+        /// Non-owner revert
+        vm.expectRevert("Ownable: caller is not the owner");
+        lgeMigration.recoverTokens(address(wstETH), _amount0, alice);
+
+        vm.stopPrank();
+        vm.startPrank(hexTrust);
+
+        /// Recover
+        lgeMigration.recoverTokens(address(wstETH), _amount0, alice);
+        assertEq(wstETH.balanceOf(address(lgeMigration)), 0);
+    }
+
+    function testSetGasLimit() public prank(alice) {
+        /// Non-owner revert
+        vm.expectRevert("Ownable: caller is not the owner");
+        lgeMigration.setGasLimit(address(wstETH), 1e6);
+
+        assertEq(lgeMigration.gasLimits(address(wstETH)), 21000);
+
+        vm.stopPrank();
+        vm.startPrank(hexTrust);
+
+        /// Set new gas limit
+        lgeMigration.setGasLimit(address(wstETH), 1e6);
+
+        assertEq(lgeMigration.gasLimits(address(wstETH)), 1e6);
+    }
+
     /// OWNER ///
 
     function testSetAllowlist() public {
@@ -503,7 +544,7 @@ contract LGEStakingForkTest is TestSetup {
 
         /// Owner allowed
         vm.startPrank(hexTrust);
-        
+
         vm.expectEmit(true, true, true, true);
         emit DepositCapSet(address(usdc), _newCap);
         lgeStaking.setDepositCap(address(usdc), _newCap);
@@ -536,7 +577,7 @@ contract LGEStakingForkTest is TestSetup {
         lgeStaking.depositERC20(address(usdc), 1e18);
 
         vm.expectRevert("Pausable: paused");
-        lgeStaking.depositETH{ value: 1e18 }();
+        lgeStaking.depositETH{value: 1e18}();
 
         vm.expectRevert("Pausable: paused");
         lgeStaking.withdraw(address(usdc), 1e18);

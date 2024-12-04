@@ -7,7 +7,9 @@ import {OzUSDDeploy, OzUSD, TransparentUpgradeableProxy} from "script/L2/OzUSDDe
 /// @dev forge test --match-contract OzUSDForkTest
 contract OzUSDForkTest is TestSetup {
     event TransferShares(address indexed from, address indexed to, uint256 sharesValue);
-    event SharesBurnt(address indexed account, uint256 preRebaseTokenAmount, uint256 postRebaseTokenAmount, uint256 sharesAmount);
+    event SharesBurnt(
+        address indexed account, uint256 preRebaseTokenAmount, uint256 postRebaseTokenAmount, uint256 sharesAmount
+    );
     event YieldDistributed(uint256 _previousTotalBalance, uint256 _newTotalBalance);
 
     OzUSD public implementation;
@@ -42,18 +44,18 @@ contract OzUSDForkTest is TestSetup {
 
     /// REBASE ///
 
-    function testMintRevertConditions() public prank(alice) {        
+    function testMintRevertConditions() public prank(alice) {
         /// Amount zero
         vm.expectRevert("OzUSD: Amount zero.");
-        ozUSD.mintOzUSD{ value: 1e18 }(alice, 0);
+        ozUSD.mintOzUSD{value: 1e18}(alice, 0);
 
         /// Insufficient amount
         vm.expectRevert("OzUSD: Insufficient USDX transfer.");
-        ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18 + 1);
+        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18 + 1);
 
         /// Mint to zero address
         vm.expectRevert("OzUSD: Mint to zero address.");
-        ozUSD.mintOzUSD{ value: 1e18 }(address(0), 1e18);
+        ozUSD.mintOzUSD{value: 1e18}(address(0), 1e18);
     }
 
     function testRedeemOzUSDRevertConditions() public prank(alice) {
@@ -62,19 +64,23 @@ contract OzUSDForkTest is TestSetup {
         assertEq(address(ozUSD).balance, 1e18);
         assertEq(ozUSD.getPooledUSDXByShares(_amountA), _amountA);
 
-        ozUSD.mintOzUSD{ value: _amountA }(alice, _amountA);
+        ozUSD.mintOzUSD{value: _amountA}(alice, _amountA);
 
         assertEq(address(ozUSD).balance, 1e18 + _amountA);
         assertEq(ozUSD.getPooledUSDXByShares(_amountA), _amountA);
 
-        ozUSD.approve(alice, ~uint256(0));
-        
         /// Amount zero
         vm.expectRevert("OzUSD: Amount zero.");
         ozUSD.redeemOzUSD(alice, 0);
 
         /// Burn more than allowance
         vm.expectRevert("OzUSD: Balance exceeded.");
+        ozUSD.redeemOzUSD(alice, 1e30);
+
+        /// Allowance
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert("OzUSD: Allowance exceeded.");
         ozUSD.redeemOzUSD(alice, 1e30);
     }
 
@@ -83,6 +89,11 @@ contract OzUSDForkTest is TestSetup {
         assertEq(address(ozUSD).balance, 1e18);
         assertEq(ozUSD.getPooledUSDXByShares(amount), amount);
 
+        /// Revert
+        vm.expectRevert("OzUSD: Must distribute at least one USDX.");
+        ozUSD.distributeYield{value: 1 ether}();
+
+        /// Rebase
         vm.expectEmit(true, true, true, true);
         emit YieldDistributed(1e18, 1e18 + amount);
         ozUSD.distributeYield{value: amount}();
@@ -97,7 +108,7 @@ contract OzUSDForkTest is TestSetup {
         assertEq(address(ozUSD).balance, 1e18);
         assertEq(ozUSD.getPooledUSDXByShares(_amountA), _amountA);
 
-        ozUSD.mintOzUSD{ value: _amountA }(alice, _amountA);
+        ozUSD.mintOzUSD{value: _amountA}(alice, _amountA);
 
         assertEq(address(ozUSD).balance, 1e18 + _amountA);
         assertEq(ozUSD.getPooledUSDXByShares(_amountA), _amountA);
@@ -117,7 +128,7 @@ contract OzUSDForkTest is TestSetup {
         assertEq(address(ozUSD).balance, 1e18);
         assertEq(ozUSD.getPooledUSDXByShares(_amountA), _amountA);
 
-        ozUSD.mintOzUSD{ value: _amountA }(alice, _amountA);
+        ozUSD.mintOzUSD{value: _amountA}(alice, _amountA);
 
         assertEq(address(ozUSD).balance, 1e18 + _amountA);
         assertEq(ozUSD.getPooledUSDXByShares(_amountA), _amountA);
@@ -137,7 +148,7 @@ contract OzUSDForkTest is TestSetup {
         assertEq(address(ozUSD).balance, 1e18);
         assertEq(ozUSD.getPooledUSDXByShares(_amountA), _amountA);
 
-        ozUSD.mintOzUSD{ value: _amountA }(alice, _amountA);
+        ozUSD.mintOzUSD{value: _amountA}(alice, _amountA);
 
         assertEq(address(ozUSD).balance, 1e18 + _amountA);
         assertEq(ozUSD.balanceOf(alice), _amountA);
@@ -167,7 +178,7 @@ contract OzUSDForkTest is TestSetup {
 
         vm.stopPrank();
         vm.startPrank(alice);
-        
+
         /// Approve to zero address
         vm.expectRevert("OzUSD: Approve to zero address.");
         ozUSD.approve(address(0), 1e18);
@@ -180,7 +191,7 @@ contract OzUSDForkTest is TestSetup {
         assertEq(ozUSD.getPooledUSDXByShares(sharesAmount), 1e18);
 
         // Mint ozUSD
-        ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18);
+        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
         assertEq(ozUSD.balanceOf(alice), 1e18);
 
         // Approve bob to spend alice's ozUSD
@@ -200,7 +211,7 @@ contract OzUSDForkTest is TestSetup {
 
     function testIncreaseAndDecreaseAllowance() public prank(alice) {
         // Mint ozUSD
-        ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18);
+        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
         assertEq(ozUSD.balanceOf(alice), 1e18);
 
         // Increase Bob's allowance
@@ -235,13 +246,13 @@ contract OzUSDForkTest is TestSetup {
 
     function testTransferShares() public prank(alice) {
         // Mint ozUSD
-        ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18);
+        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
         assertEq(ozUSD.sharesOf(alice), 1e18);
 
         // Transfer shares from alice to bob
         uint256 sharesToTransfer = 0.5e18;
         uint256 tokensTransferred = ozUSD.transferShares(bob, sharesToTransfer);
-        
+
         // Check balances after the transfer
         assertEq(ozUSD.balanceOf(alice), 0.5e18);
         assertEq(ozUSD.balanceOf(bob), tokensTransferred);
@@ -251,7 +262,7 @@ contract OzUSDForkTest is TestSetup {
 
     function testTransferSharesFrom() public prank(alice) {
         // Mint ozUSD
-        ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18);
+        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
 
         // Transfer shares from alice to bob
         uint256 sharesToTransfer = 0.5e18;
@@ -265,7 +276,7 @@ contract OzUSDForkTest is TestSetup {
 
     function testTransferMoreThanBalanceReverts() public prank(alice) {
         // Mint ozUSD
-        ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18);
+        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
 
         // Attempt to transfer more than alice's balance
         vm.expectRevert("OzUSD: Balance exceeded.");
@@ -276,11 +287,10 @@ contract OzUSDForkTest is TestSetup {
         uint256 sharesAmount = 1e18;
 
         // Mint ozUSD
-        ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18);
+        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
         assertEq(ozUSD.balanceOf(alice), 1e18);
 
         // Burn half of the shares
-        ozUSD.approve(alice, 0.5e18);
         ozUSD.redeemOzUSD(alice, 0.5e18);
 
         // Check balances after burning
@@ -289,7 +299,7 @@ contract OzUSDForkTest is TestSetup {
     }
 
     function testAllowanceExceeded() public prank(alice) {
-        ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18);
+        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
 
         // Alice approves Bob to spend 0.5 ozUSD
         ozUSD.approve(bob, 5e17);
@@ -311,12 +321,12 @@ contract OzUSDForkTest is TestSetup {
 
     function testProxyInitialize() public {
         vm.expectRevert("Initializable: contract is already initialized");
-        implementation.initialize{ value: 1e18 }(1e18);
+        implementation.initialize{value: 1e18}(1e18);
 
         assertEq(address(implementation).balance, 0);
 
         vm.expectRevert("Initializable: contract is already initialized");
-        ozUSD.initialize{ value: 1e18 }(1e18);
+        ozUSD.initialize{value: 1e18}(1e18);
 
         assertEq(address(ozUSD).balance, 1e18);
     }

@@ -43,7 +43,7 @@ contract WozUSDForkTest is TestSetup {
         uint256 sharesAmount = 1e18;
 
         /// Mint only half the amount
-        ozUSD.mintOzUSD{ value: 0.5e18 }(alice, 0.5e18);
+        ozUSD.mintOzUSD{value: 0.5e18}(alice, 0.5e18);
         ozUSD.approve(address(wozUSD), ~uint256(0));
 
         vm.expectRevert();
@@ -56,7 +56,7 @@ contract WozUSDForkTest is TestSetup {
         uint256 sharesAmount = 1e18;
         assertEq(address(ozUSD).balance, 1e18);
         assertEq(ozUSD.getPooledUSDXByShares(sharesAmount), 1e18);
-        ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18);
+        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
 
         /// Wrap
         ozUSD.approve(address(wozUSD), ~uint256(0));
@@ -78,7 +78,7 @@ contract WozUSDForkTest is TestSetup {
         uint256 sharesAmount = 1e18;
         assertEq(address(ozUSD).balance, 1e18);
         assertEq(ozUSD.getPooledUSDXByShares(sharesAmount), 1e18);
-        ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18);
+        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
 
         /// Wrap
         ozUSD.approve(address(wozUSD), ~uint256(0));
@@ -106,13 +106,13 @@ contract WozUSDForkTest is TestSetup {
         uint256 sharesAmount = 1e18;
         assertEq(address(ozUSD).balance, 1e18);
         assertEq(ozUSD.getPooledUSDXByShares(sharesAmount), 1e18);
-        ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18);
+        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
 
         /// Wrap
         ozUSD.approve(address(wozUSD), ~uint256(0));
         wozUSD.wrap(1e18);
 
-        (bool s,) = address(ozUSD).call{ value: 1e18 }("");
+        (bool s,) = address(ozUSD).call{value: 1e18}("");
         assert(s);
 
         /// Unwrap
@@ -122,14 +122,14 @@ contract WozUSDForkTest is TestSetup {
 
     function testWrapAndRebaseSmallAmount() public prank(alice) {
         uint256 sharesAmount = 0.001e18;
-        ozUSD.mintOzUSD{ value: sharesAmount }(alice, sharesAmount);
+        ozUSD.mintOzUSD{value: sharesAmount}(alice, sharesAmount);
 
         /// Wrap
         ozUSD.approve(address(wozUSD), ~uint256(0));
         wozUSD.wrap(sharesAmount);
 
         /// Mock rebase
-        (bool s,) = address(ozUSD).call{ value: sharesAmount }("");
+        (bool s,) = address(ozUSD).call{value: sharesAmount}("");
         assert(s);
 
         /// Unwrap
@@ -140,7 +140,7 @@ contract WozUSDForkTest is TestSetup {
     function testMultipleWrapUnwrap() public prank(alice) {
         uint256 sharesAmount = 1e18;
 
-        ozUSD.mintOzUSD{ value: 1e18 }(alice, 1e18);
+        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
         ozUSD.approve(address(wozUSD), ~uint256(0));
 
         // First wrap
