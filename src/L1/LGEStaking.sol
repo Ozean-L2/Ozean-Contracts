@@ -102,16 +102,18 @@ contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
         require(!migrationActivated(), "LGE Staking: May not deposit once migration has been activated.");
         require(_amount > 0, "LGE Staking: May not deposit nothing.");
         require(allowlisted[_token], "LGE Staking: Token must be allowlisted.");
+        require(
+            totalDeposited[_token] + _amount < depositCap[_token], "LGE Staking: deposit amount exceeds deposit cap."
+        );
         uint256 balanceBefore = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 recievedAmount = IERC20(_token).balanceOf(address(this)) - balanceBefore;
         require(
-            totalDeposited[_token] + recievedAmount < depositCap[_token],
-            "LGE Staking: deposit amount exceeds deposit cap."
+            IERC20(_token).balanceOf(address(this)) - balanceBefore == _amount,
+            "LGE Staking: Fee-on-transfer tokens not supported."
         );
-        balance[_token][msg.sender] += recievedAmount;
-        totalDeposited[_token] += recievedAmount;
-        emit Deposit(_token, recievedAmount, msg.sender);
+        balance[_token][msg.sender] += _amount;
+        totalDeposited[_token] += _amount;
+        emit Deposit(_token, _amount, msg.sender);
     }
 
     /// @notice Deposits ETH into the staking contract, converting it to wstETH.
@@ -139,12 +141,10 @@ contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
     function withdraw(address _token, uint256 _amount) external nonReentrant whenNotPaused {
         require(_amount > 0, "LGE Staking: may not withdraw nothing.");
         require(balance[_token][msg.sender] >= _amount, "LGE Staking: insufficient deposited balance.");
-        uint256 balanceBefore = IERC20(_token).balanceOf(address(this));
+        balance[_token][msg.sender] -= _amount;
+        totalDeposited[_token] -= _amount;
         IERC20(_token).safeTransfer(msg.sender, _amount);
-        uint256 sentAmount = balanceBefore - IERC20(_token).balanceOf(address(this));
-        balance[_token][msg.sender] -= sentAmount;
-        totalDeposited[_token] -= sentAmount;
-        emit Withdraw(_token, sentAmount, msg.sender);
+        emit Withdraw(_token, _amount, msg.sender);
     }
 
     /// MIGRATE ///
@@ -160,17 +160,13 @@ contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
         require(length > 0, "LGE Staking: Must migrate some tokens.");
         uint256[] memory amounts = new uint256[](length);
         uint256 amount;
-        uint256 balanceBefore;
-        uint256 sentAmount;
         for (uint256 i; i < length; i++) {
             amount = balance[_tokens[i]][msg.sender];
             require(amount > 0, "LGE Staking: No tokens to migrate.");
-            balanceBefore = IERC20(_tokens[i]).balanceOf(address(this));
+            balance[_tokens[i]][msg.sender] -= amount;
+            totalDeposited[_tokens[i]] -= amount;
+            amounts[i] = amount;
             IERC20(_tokens[i]).safeTransfer(address(lgeMigration), amount);
-            sentAmount = balanceBefore - IERC20(_tokens[i]).balanceOf(address(this));
-            balance[_tokens[i]][msg.sender] -= sentAmount;
-            totalDeposited[_tokens[i]] -= sentAmount;
-            amounts[i] = sentAmount;
         }
         lgeMigration.migrate(_l2Destination, _tokens, amounts);
         emit TokensMigrated(msg.sender, _l2Destination, _tokens, amounts);

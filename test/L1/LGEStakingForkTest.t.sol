@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import {TestSetup, USDXBridge} from "test/utils/TestSetup.sol";
-import {TestERC20Decimals} from "test/utils/Mocks.sol";
+import {TestERC20Decimals, TestERC20DecimalsFeeOnTransfer} from "test/utils/Mocks.sol";
 import {LGEStakingDeploy, LGEStaking} from "script/L1/LGEStakingDeploy.s.sol";
 import {LGEMigrationDeploy, LGEMigrationV1} from "script/L1/LGEMigrationDeploy.s.sol";
 
@@ -124,20 +124,27 @@ contract LGEStakingForkTest is TestSetup {
 
         /// Not allowlisted
         vm.expectRevert("LGE Staking: Token must be allowlisted.");
-        lgeStaking.depositERC20(address(88), 1);
-
-        /// Exceeding allowance
-        vm.expectRevert("ERC20: transfer amount exceeds allowance");
-        lgeStaking.depositERC20(address(usdc), 1e13);
+        lgeStaking.depositERC20(address(88), 1);        
 
         /// Exceeding deposit caps
         usdc.approve(address(lgeStaking), 1e13);
         vm.expectRevert("LGE Staking: deposit amount exceeds deposit cap.");
         lgeStaking.depositERC20(address(usdc), 1e13);
 
-        /// Migration activated
         vm.stopPrank();
         vm.startPrank(hexTrust);
+
+        /// Fee on transfer
+        TestERC20DecimalsFeeOnTransfer feeOnTransferToken = new TestERC20DecimalsFeeOnTransfer(18);
+        lgeStaking.setAllowlist(address(feeOnTransferToken), true);
+        lgeStaking.setDepositCap(address(feeOnTransferToken), 1e30);
+        feeOnTransferToken.mint(hexTrust, 1e21);
+        feeOnTransferToken.approve(address(lgeStaking), 1e20);
+
+        vm.expectRevert("LGE Staking: Fee-on-transfer tokens not supported.");
+        lgeStaking.depositERC20(address(feeOnTransferToken), 1e20);
+
+        /// Migration activated
         lgeStaking.setMigrationContract(address(lgeMigration));
         assertEq(lgeStaking.migrationActivated(), true);
         vm.stopPrank();
