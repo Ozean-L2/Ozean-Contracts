@@ -11,9 +11,9 @@ import {Initializable} from "openzeppelin/contracts/proxy/utils/Initializable.so
 ///         total balances; meaning that any USDX sent to this contract automatically rebases all user balances.
 ///         1 USDX == 1 ozUSD.
 /// @dev    This contract does not fully comply with the ERC20 standard as rebasing events do not emit `Transfer`
-/// events.
+///         events.
 ///         This contract is inspired by Lido's stETH contract:
-/// https://vscode.blockscan.com/ethereum/0x17144556fd3424edc8fc8a4c940b2d04936d17eb
+///         https://vscode.blockscan.com/ethereum/0x17144556fd3424edc8fc8a4c940b2d04936d17eb
 contract OzUSD is IERC20, ReentrancyGuard, Initializable {
     string public constant name = "Ozean USD";
     string public constant symbol = "ozUSD";

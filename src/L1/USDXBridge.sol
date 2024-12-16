@@ -188,13 +188,13 @@ contract USDXBridge is Ownable, ReentrancyGuard, ISemver {
     }
 }
 
-/// @notice An interface whihc extends the IERC20 to include a decimals view function.
+/// @notice An interface which extends the IERC20 to include a decimals view function.
 /// @dev    Any allow-listed stablecoin added to the bridge must conform to this interface.
 interface IERC20Decimals is IERC20 {
     function decimals() external view returns (uint8);
 }
 
-/// @notice An interface whihc extends the IERC20Decimals to include a mint function to allow for minting
+/// @notice An interface which extends the IERC20Decimals to include a mint function to allow for minting
 ///         of new USDX tokens by this bridge.
 interface IUSDX is IERC20Decimals {
     function mint(address to, uint256 amount) external;
