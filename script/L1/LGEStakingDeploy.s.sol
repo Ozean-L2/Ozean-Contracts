@@ -8,7 +8,7 @@ contract LGEStakingDeploy is ScriptUtils {
     LGEStaking public lgeStaking;
     address public stETH;
     address public wstETH;
-    address public hexTrust = makeAddr("HEX_TRUST");
+    address public hexTrust;
     address[] public tokens;
     uint256[] public depositCaps;
 
@@ -28,6 +28,17 @@ contract LGEStakingDeploy is ScriptUtils {
     }
 
     function run() external broadcast {
+        require(hexTrust != address(0), "Script: Zero address.");
+        require(stETH != address(0), "Script: Zero address.");
+        require(wstETH != address(0), "Script: Zero address.");
+
+        uint256 length = tokens.length;
+        require(length == depositCaps.length, "Script: Unequal length.");
+        for (uint256 i; i < length; i++) {
+            require(tokens[i] != address(0), "Script: Zero address.");
+            require(depositCaps[i] != 0, "Script: Zero address.");
+        }
+
         lgeStaking = new LGEStaking(hexTrust, stETH, wstETH, tokens, depositCaps);
     }
 }

@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import {TestSetup} from "test/utils/TestSetup.sol";
-import {OzUSDDeploy, OzUSD, TransparentUpgradeableProxy} from "script/L2/OzUSDDeploy.s.sol";
+import {OzUSDDeploy, OzUSD} from "script/L2/OzUSDDeploy.s.sol";
 
 /// @dev forge test --match-contract OzUSDForkTest
 contract OzUSDForkTest is TestSetup {
@@ -12,36 +12,38 @@ contract OzUSDForkTest is TestSetup {
     );
     event YieldDistributed(uint256 _previousTotalBalance, uint256 _newTotalBalance);
 
-    OzUSD public implementation;
-
     function setUp() public override {
         super.setUp();
         _forkL2();
 
         OzUSDDeploy deployScript = new OzUSDDeploy();
+        deployScript.setUp(hexTrust);
         deployScript.run();
-        implementation = deployScript.implementation();
-        ozUSD = OzUSD(payable(deployScript.proxy()));
+        ozUSD = deployScript.ozUSD();
     }
 
     /// SETUP ///
 
     function testInitialize() public view {
         assertEq(address(ozUSD).balance, 1e18);
+        assertEq(ozUSD.balanceOf(address(0xdead)), 1e18);
         assertEq(ozUSD.totalSupply(), 1e18);
         assertEq(ozUSD.name(), "Ozean USD");
         assertEq(ozUSD.symbol(), "ozUSD");
         assertEq(ozUSD.decimals(), 18);
     }
-
-    function testInitializeRevertConditions() public {
+    
+    function testDeployRevertConditions() public {
+        /// Deploy with less than 1 USDX
         uint256 initialSharesAmount = 1e18;
-        vm.expectRevert("OzUSD: Incorrect value.");
-        new TransparentUpgradeableProxy{value: initialSharesAmount - 1}(
-            address(implementation), hexTrust, abi.encodeWithSignature("initialize(uint256)", initialSharesAmount)
-        );
-    }
+        vm.expectRevert("OzUSD: Must deploy with at least one USDX.");
+        new OzUSD{value: initialSharesAmount - 1}(hexTrust, initialSharesAmount - 1);
 
+        /// Wrong value
+        vm.expectRevert("OzUSD: Incorrect value.");
+        new OzUSD{value: initialSharesAmount}(hexTrust, initialSharesAmount - 1);
+    }
+ 
     /// REBASE ///
 
     function testMintRevertConditions() public prank(alice) {
@@ -84,14 +86,14 @@ contract OzUSDForkTest is TestSetup {
         ozUSD.redeemOzUSD(alice, 1e30);
     }
 
-    function testRebase() public prank(alice) {
+    function testRebase() public prank(hexTrust) {
         uint256 amount = 100 ether;
         assertEq(address(ozUSD).balance, 1e18);
         assertEq(ozUSD.getPooledUSDXByShares(amount), amount);
 
-        /// Revert
-        vm.expectRevert("OzUSD: Must distribute at least one USDX.");
-        ozUSD.distributeYield{value: 1 ether}();
+        /// Revert if under 1 USDX
+        vm.expectRevert("OzUSD: Transfer failed.");
+        ozUSD.distributeYield{value: 1 ether - 1}();
 
         /// Rebase
         vm.expectEmit(true, true, true, true);
@@ -115,7 +117,8 @@ contract OzUSDForkTest is TestSetup {
 
         vm.expectEmit(true, true, true, true);
         emit YieldDistributed(1e18 + _amountA, 1e18 + _amountA + _amountB);
-        ozUSD.distributeYield{value: _amountB}();
+        (bool s,) = address(ozUSD).call{value: _amountB}("");
+        assert(s);
 
         assertEq(address(ozUSD).balance, 1e18 + _amountA + _amountB);
         assertEq(ozUSD.balanceOf(alice), ozUSD.getPooledUSDXByShares(_amountA));
@@ -156,7 +159,8 @@ contract OzUSDForkTest is TestSetup {
 
         vm.expectEmit(true, true, true, true);
         emit YieldDistributed(1e18 + _amountA, 1e18 + _amountA + _amountB);
-        ozUSD.distributeYield{value: _amountB}();
+        (bool s,) = address(ozUSD).call{value: _amountB}("");
+        assert(s);
 
         uint256 predictedAliceAmount = (_amountA * (1e18 + _amountA + _amountB)) / (1e18 + _amountA);
 
@@ -249,6 +253,10 @@ contract OzUSDForkTest is TestSetup {
         ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
         assertEq(ozUSD.sharesOf(alice), 1e18);
 
+        /// Burn zero revert
+        vm.expectRevert("OzUSD: Transfer zero shares.");
+        ozUSD.transferShares(alice, 0);
+
         // Transfer shares from alice to bob
         uint256 sharesToTransfer = 0.5e18;
         uint256 tokensTransferred = ozUSD.transferShares(bob, sharesToTransfer);
@@ -290,6 +298,10 @@ contract OzUSDForkTest is TestSetup {
         ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
         assertEq(ozUSD.balanceOf(alice), 1e18);
 
+        /// Burn zero revert
+        vm.expectRevert("OzUSD: Amount zero.");
+        ozUSD.redeemOzUSD(alice, 0);
+
         // Burn half of the shares
         ozUSD.redeemOzUSD(alice, 0.5e18);
 
@@ -312,32 +324,37 @@ contract OzUSDForkTest is TestSetup {
         ozUSD.transferFrom(alice, bob, 1e18);
     }
 
-    /// PROXY ///
+    /// OWNER ///
 
-    /// @dev Can only be called by admin, otherwise delegatecalls to impl
-    function testAdmin() public prank(hexTrust) {
-        assertEq(TransparentUpgradeableProxy(payable(ozUSD)).admin(), hexTrust);
+    function testPaused() public prank(alice) {
+        assertEq(ozUSD.paused(), false);
+
+        /// Revert for non-owner
+        vm.expectRevert("Ownable: caller is not the owner");
+        ozUSD.setPaused(true);
+
+        vm.stopPrank();
+        vm.startPrank(hexTrust);
+
+        ozUSD.setPaused(true);
+        assertEq(ozUSD.paused(), true);
+
+        vm.expectRevert("Pausable: paused");
+        ozUSD.mintOzUSD{value: 1}(alice, 1);
+
+        ozUSD.setPaused(false);
+        assertEq(ozUSD.paused(), false);
     }
 
-    function testProxyInitialize() public {
-        vm.expectRevert("Initializable: contract is already initialized");
-        implementation.initialize{value: 1e18}(1e18);
+    function testDistributeYield() public prank(alice) {
+        /// Revert for non-owner
+        vm.expectRevert("Ownable: caller is not the owner");
+        ozUSD.distributeYield{value: 1 ether}();
 
-        assertEq(address(implementation).balance, 0);
+        vm.stopPrank();
+        vm.startPrank(hexTrust);
 
-        vm.expectRevert("Initializable: contract is already initialized");
-        ozUSD.initialize{value: 1e18}(1e18);
-
-        assertEq(address(ozUSD).balance, 1e18);
-    }
-
-    function testUpgradeImplementation() public prank(hexTrust) {
-        OzUSD newImplementation = new OzUSD();
-
-        assertEq(TransparentUpgradeableProxy(payable(ozUSD)).implementation(), address(implementation));
-
-        TransparentUpgradeableProxy(payable(ozUSD)).upgradeToAndCall(address(newImplementation), "");
-
-        assertEq(TransparentUpgradeableProxy(payable(ozUSD)).implementation(), address(newImplementation));
+        /// Owner
+        ozUSD.distributeYield{value: 1 ether}();
     }
 }

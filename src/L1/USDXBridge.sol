@@ -7,7 +7,6 @@ import {IERC20} from "openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {OptimismPortal} from "optimism/src/L1/OptimismPortal.sol";
 import {SystemConfig} from "optimism/src/L1/SystemConfig.sol";
-import {ISemver} from "optimism/src/universal/interfaces/ISemver.sol";
 
 /// @title  USDX Bridge
 /// @notice This contract provides bridging functionality for allow-listed stablecoins to the Ozean Layer L2.
@@ -15,12 +14,8 @@ import {ISemver} from "optimism/src/universal/interfaces/ISemver.sol";
 ///         the L2 via the Optimism Portal contract. The owner of this contract can modify the set of
 ///         allow-listed stablecoins accepted, along with the deposit caps, and can also withdraw any deposited
 ///         ERC20 tokens.
-contract USDXBridge is Ownable, ReentrancyGuard, ISemver {
+contract USDXBridge is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20Decimals;
-
-    /// @notice Semantic version.
-    /// @custom:semver 1.0.0
-    string public constant version = "1.0.0";
 
     /// @notice Contract of the Optimism Portal.
     /// @custom:network-specific
@@ -89,9 +84,10 @@ contract USDXBridge is Ownable, ReentrancyGuard, ISemver {
             uint256 length = _stablecoins.length;
             require(
                 length == _depositCaps.length,
-                "USDXBridge: Stablecoins array length must equal the Deposit Caps array length."
+                "USDX Bridge: Stablecoins array length must equal the Deposit Caps array length."
             );
             for (uint256 i; i < length; ++i) {
+                require(_stablecoins[i] != address(0), "USDX Bridge: Zero address.");
                 allowlisted[_stablecoins[i]] = true;
                 emit AllowlistSet(_stablecoins[i], true);
                 depositCap[_stablecoins[i]] = _depositCaps[i];
@@ -108,16 +104,21 @@ contract USDXBridge is Ownable, ReentrancyGuard, ISemver {
     /// @param  _to Recieving address on L2.
     function bridge(address _stablecoin, uint256 _amount, address _to) external nonReentrant {
         /// Checks
-        require(allowlisted[_stablecoin], "USDXBridge: Stablecoin not accepted.");
-        require(_amount > 0, "USDXBridge: May not bridge nothing.");
+        require(allowlisted[_stablecoin], "USDX Bridge: Stablecoin not accepted.");
+        require(_amount > 0, "USDX Bridge: May not bridge nothing.");
         uint256 bridgeAmount = _getBridgeAmount(_stablecoin, _amount);
         require(
-            totalBridged[_stablecoin] + bridgeAmount < depositCap[_stablecoin],
-            "USDXBridge: Bridge amount exceeds deposit cap."
+            totalBridged[_stablecoin] + bridgeAmount <= depositCap[_stablecoin],
+            "USDX Bridge: Bridge amount exceeds deposit cap."
         );
         /// Update state
-        totalBridged[_stablecoin] += bridgeAmount;
+        uint256 balanceBefore = IERC20Decimals(_stablecoin).balanceOf(address(this));
         IERC20Decimals(_stablecoin).safeTransferFrom(msg.sender, address(this), _amount);
+        require(
+            IERC20Decimals(_stablecoin).balanceOf(address(this)) - balanceBefore == _amount,
+            "USDX Bridge: Fee-on-transfer tokens not supported."
+        );
+        totalBridged[_stablecoin] += bridgeAmount;
         /// Mint USDX
         usdx().mint(address(this), bridgeAmount);
         /// Bridge USDX
