@@ -53,7 +53,7 @@ contract LGEStakingForkTest is TestSetup {
         l2Addresses = new address[](4);
         l2Addresses[0] = address(usdc);
         l2Addresses[1] = address(usdt);
-        l2Addresses[2] = address(0);
+        l2Addresses[2] = address(1);
         l2Addresses[3] = 0x0733Df3e178c32f44B85B731D5475156a6E16391;
 
         LGEMigrationDeploy migrationDeployScript = new LGEMigrationDeploy();
@@ -75,7 +75,6 @@ contract LGEStakingForkTest is TestSetup {
     /// SETUP ///
 
     function testInitialize() public view {
-        assertEq(lgeStaking.version(), "1.0.0");
         assertEq(address(lgeStaking.lgeMigration()), address(0));
         assertEq(lgeStaking.migrationActivated(), false);
 
@@ -86,6 +85,20 @@ contract LGEStakingForkTest is TestSetup {
                 : assertEq(lgeStaking.depositCap(l1Addresses[i]), 1e24);
             assertEq(lgeStaking.totalDeposited(l1Addresses[i]), 0);
         }
+    }
+
+    function testDeployRevertWithDuplicateTokens() public {
+        /// Duplicate USDC
+        l1Addresses = new address[](3);
+        l1Addresses[0] = address(usdc);
+        l1Addresses[1] = address(usdc);
+        l1Addresses[2] = address(dai);
+        depositCaps = new uint256[](3);
+        depositCaps[0] = 1e30;
+        depositCaps[1] = 1e30;
+        depositCaps[2] = 1e30;
+        vm.expectRevert("LGE Staking: Duplicate tokens.");
+        lgeStaking = new LGEStaking(hexTrust, address(stETH), address(wstETH), l1Addresses, depositCaps);
     }
 
     function testDeployRevertWithUnequalArrayLengths() public {
@@ -324,12 +337,6 @@ contract LGEStakingForkTest is TestSetup {
         tokens[0] = address(wstETH);
 
         vm.expectRevert("LGE Staking: No tokens to migrate.");
-        lgeStaking.migrate(alice, tokens);
-
-        /// L2 Address not set
-        tokens[0] = address(dai);
-
-        vm.expectRevert("LGE Migration: L2 contract address not set for migration.");
         lgeStaking.migrate(alice, tokens);
     }
 

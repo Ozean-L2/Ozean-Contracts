@@ -6,7 +6,6 @@ import {SafeERC20} from "openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"
 import {IERC20} from "openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Pausable} from "openzeppelin/contracts/security/Pausable.sol";
-import {ISemver} from "optimism/src/universal/interfaces/ISemver.sol";
 import {ILGEMigration} from "src/L1/interface/ILGEMigration.sol";
 
 /// @title  LGE Staking
@@ -15,10 +14,6 @@ import {ILGEMigration} from "src/L1/interface/ILGEMigration.sol";
 /// @dev    Inspired by https://vscode.blockscan.com/ethereum/0xf047ab4c75cebf0eb9ed34ae2c186f3611aeafa6
 contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
-
-    /// @notice Semantic version.
-    /// @custom:semver 1.0.0
-    string public constant version = "1.0.0";
 
     /// @notice The contract address for Lido's staked ether.
     address public immutable stETH;
@@ -34,7 +29,7 @@ contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
     /// @dev    token => allowlisted
     mapping(address => bool) public allowlisted;
 
-    /// @notice The total amount of tokens deposted via this contract per allowlisted token address.
+    /// @notice The total amount of tokens deposited via this contract per allowlisted token address.
     /// @dev    token => amount
     mapping(address => uint256) public totalDeposited;
 
@@ -85,6 +80,7 @@ contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
             length == _depositCaps.length, "LGE Staking: Tokens array length must equal the Deposit Caps array length."
         );
         for (uint256 i; i < length; ++i) {
+            require(!allowlisted[_tokens[i]], "LGE Staking: Duplicate tokens.");
             allowlisted[_tokens[i]] = true;
             emit AllowlistSet(_tokens[i], true);
             depositCap[_tokens[i]] = _depositCaps[i];
@@ -103,7 +99,7 @@ contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
         require(_amount > 0, "LGE Staking: May not deposit nothing.");
         require(allowlisted[_token], "LGE Staking: Token must be allowlisted.");
         require(
-            totalDeposited[_token] + _amount < depositCap[_token], "LGE Staking: deposit amount exceeds deposit cap."
+            totalDeposited[_token] + _amount <= depositCap[_token], "LGE Staking: deposit amount exceeds deposit cap."
         );
         uint256 balanceBefore = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
@@ -125,7 +121,7 @@ contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
         IstETH(stETH).submit{value: msg.value}(address(0));
         uint256 wstETHAmount = IwstETH(wstETH).wrap(IstETH(stETH).balanceOf(address(this)));
         require(
-            totalDeposited[wstETH] + wstETHAmount < depositCap[wstETH],
+            totalDeposited[wstETH] + wstETHAmount <= depositCap[wstETH],
             "LGE Staking: deposit amount exceeds deposit cap."
         );
         balance[wstETH][msg.sender] += wstETHAmount;

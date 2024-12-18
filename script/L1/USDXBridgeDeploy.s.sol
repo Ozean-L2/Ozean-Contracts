@@ -8,7 +8,6 @@ import {SystemConfig} from "optimism/src/L1/SystemConfig.sol";
 
 contract USDXBridgeDeploy is ScriptUtils {
     USDXBridge public usdxBridge;
-
     address public hexTrust;
     address public usdc;
     address public usdt;
@@ -42,6 +41,17 @@ contract USDXBridgeDeploy is ScriptUtils {
         depositCaps[0] = 1e30;
         depositCaps[1] = 1e30;
         depositCaps[2] = 1e30;
+
+        require(hexTrust != address(0), "Script: Zero address.");
+        require(address(optimismPortal) != address(0), "Script: Zero address.");
+        require(address(systemConfig) != address(0), "Script: Zero address.");
+
+        uint256 length = stablecoins.length;
+        require(length == depositCaps.length, "Script: Unequal length.");
+        for (uint256 i; i < length; i++) {
+            require(stablecoins[i] != address(0), "Script: Zero address.");
+        }
+
         usdxBridge = new USDXBridge(hexTrust, optimismPortal, systemConfig, stablecoins, depositCaps);
     }
 }

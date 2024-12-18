@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import {TestSetup} from "test/utils/TestSetup.sol";
-import {TestERC20Decimals} from "test/utils/Mocks.sol";
+import {TestERC20Decimals, TestERC20DecimalsFeeOnTransfer} from "test/utils/Mocks.sol";
 import {AddressAliasHelper} from "optimism/src/vendor/AddressAliasHelper.sol";
 import {USDXBridgeDeploy, USDXBridge} from "script/L1/USDXBridgeDeploy.s.sol";
 
@@ -30,7 +30,8 @@ contract USDXBridgeForkTest is TestSetup {
 
     /// SETUP ///
 
-    function testDeployRevertWithUnequalArrayLengths() public {
+    function testDeployRevertConditions() public {
+        /// Unequal array length
         address[] memory stablecoins = new address[](3);
         stablecoins[0] = address(usdc);
         stablecoins[1] = address(usdt);
@@ -38,7 +39,19 @@ contract USDXBridgeForkTest is TestSetup {
         uint256[] memory depositCaps = new uint256[](2);
         depositCaps[0] = 1e30;
         depositCaps[1] = 1e30;
-        vm.expectRevert("USDXBridge: Stablecoins array length must equal the Deposit Caps array length.");
+        vm.expectRevert("USDX Bridge: Stablecoins array length must equal the Deposit Caps array length.");
+        usdxBridge = new USDXBridge(hexTrust, optimismPortal, systemConfig, stablecoins, depositCaps);
+
+        /// Zero address
+        stablecoins = new address[](3);
+        stablecoins[0] = address(usdc);
+        stablecoins[1] = address(usdt);
+        stablecoins[2] = address(0);
+        depositCaps = new uint256[](3);
+        depositCaps[0] = 1e30;
+        depositCaps[1] = 1e30;
+        depositCaps[2] = 1e30;
+        vm.expectRevert("USDX Bridge: Zero address.");
         usdxBridge = new USDXBridge(hexTrust, optimismPortal, systemConfig, stablecoins, depositCaps);
     }
 
@@ -97,17 +110,31 @@ contract USDXBridgeForkTest is TestSetup {
         /// Non-accepted stablecoin/ERC20
         uint256 _amount = 100e18;
         TestERC20Decimals usde = new TestERC20Decimals(18);
-        vm.expectRevert("USDXBridge: Stablecoin not accepted.");
+        vm.expectRevert("USDX Bridge: Stablecoin not accepted.");
         usdxBridge.bridge(address(usde), _amount, alice);
 
         /// Deposit zero
-        vm.expectRevert("USDXBridge: May not bridge nothing.");
+        vm.expectRevert("USDX Bridge: May not bridge nothing.");
         usdxBridge.bridge(address(dai), 0, alice);
 
         /// Deposit Cap exceeded
         uint256 excess = usdxBridge.depositCap(address(dai)) + 1;
-        vm.expectRevert("USDXBridge: Bridge amount exceeds deposit cap.");
+        vm.expectRevert("USDX Bridge: Bridge amount exceeds deposit cap.");
         usdxBridge.bridge(address(dai), excess, alice);
+
+        vm.stopPrank();
+        vm.startPrank(hexTrust);
+
+        /// Rebasing token
+        TestERC20DecimalsFeeOnTransfer feeOnTransfer = new TestERC20DecimalsFeeOnTransfer(18);
+        feeOnTransfer.mint(hexTrust, 1 ether);
+
+        feeOnTransfer.approve(address(usdxBridge), ~uint256(0));
+        usdxBridge.setAllowlist(address(feeOnTransfer), true);
+        usdxBridge.setDepositCap(address(feeOnTransfer), 1e30);
+
+        vm.expectRevert("USDX Bridge: Fee-on-transfer tokens not supported.");
+        usdxBridge.bridge(address(feeOnTransfer), 1 ether, hexTrust);
     }
 
     function testBridgeUSDXWithUSDC() public prank(alice) {

@@ -28,7 +28,7 @@ contract LGEMigrationV1 is Ownable, ILGEMigration, ReentrancyGuard {
     /// @notice The address of Circle's USDC.
     address public immutable usdc;
 
-    /// @notice The address of Wrapped Statked Ether.
+    /// @notice The address of Wrapped Staked Ether.
     address public immutable wstETH;
 
     /// @notice A mapping from Layer 1 token addresses to their corresponding Layer 2 addresses.
@@ -78,9 +78,6 @@ contract LGEMigrationV1 is Ownable, ILGEMigration, ReentrancyGuard {
         require(msg.sender == lgeStaking, "LGE Migration: Only the staking contract can call this function.");
         uint256 length = _tokens.length;
         for (uint256 i; i < length; i++) {
-            require(
-                l1ToL2Addresses[_tokens[i]] != address(0), "LGE Migration: L2 contract address not set for migration."
-            );
             if (_tokens[i] == usdc) {
                 /// Handle USDC
                 IERC20(_tokens[i]).safeApprove(address(usdxBridge), _amounts[i]);
