@@ -15,6 +15,7 @@ contract LGEMigrationDeploy is ScriptUtils {
     address public wstETH;
     address[] public l1Addresses;
     address[] public l2Addresses;
+    address[] public restrictedL2Addresses;
 
     /// @dev Used in testing environment, unnecessary for mainnet deployment
     function setUp(
@@ -26,7 +27,8 @@ contract LGEMigrationDeploy is ScriptUtils {
         address _usdc,
         address _wstETH,
         address[] memory _l1Addresses,
-        address[] memory _l2Addresses
+        address[] memory _l2Addresses,
+        address[] memory _restrictedL2Addresses
     ) external {
         hexTrust = _hexTrust;
         l1StandardBridge = _l1StandardBridge;
@@ -37,6 +39,7 @@ contract LGEMigrationDeploy is ScriptUtils {
         wstETH = _wstETH;
         l1Addresses = _l1Addresses;
         l2Addresses = _l2Addresses;
+        restrictedL2Addresses = _restrictedL2Addresses;
     }
 
     function run() external broadcast {
@@ -64,7 +67,8 @@ contract LGEMigrationDeploy is ScriptUtils {
             usdc,
             wstETH,
             l1Addresses,
-            l2Addresses
+            l2Addresses,
+            restrictedL2Addresses
         );
     }
 }

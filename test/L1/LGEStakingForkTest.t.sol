@@ -21,6 +21,7 @@ contract LGEStakingForkTest is TestSetup {
 
     address[] public l1Addresses;
     address[] public l2Addresses;
+    address[] public restrictedL2Addresses;
     uint256[] public depositCaps;
 
     function setUp() public override {
@@ -56,6 +57,11 @@ contract LGEStakingForkTest is TestSetup {
         l2Addresses[2] = address(1);
         l2Addresses[3] = 0x0733Df3e178c32f44B85B731D5475156a6E16391;
 
+        /// @dev abitrary restricted L2 destinations
+        restrictedL2Addresses = new address[](2);
+        restrictedL2Addresses[0] = address(1000);
+        restrictedL2Addresses[1] = address(1001);
+
         LGEMigrationDeploy migrationDeployScript = new LGEMigrationDeploy();
         migrationDeployScript.setUp(
             hexTrust,
@@ -66,7 +72,8 @@ contract LGEStakingForkTest is TestSetup {
             address(usdc),
             address(wstETH),
             l1Addresses,
-            l2Addresses
+            l2Addresses,
+            restrictedL2Addresses
         );
         migrationDeployScript.run();
         lgeMigration = migrationDeployScript.lgeMigration();
@@ -124,7 +131,8 @@ contract LGEStakingForkTest is TestSetup {
             address(usdc),
             address(wstETH),
             l1Addresses,
-            l2Addresses
+            l2Addresses,
+            restrictedL2Addresses
         );
     }
 
@@ -338,6 +346,12 @@ contract LGEStakingForkTest is TestSetup {
 
         vm.expectRevert("LGE Staking: No tokens to migrate.");
         lgeStaking.migrate(alice, tokens);
+
+        /// Restricted address recipient
+        tokens[0] = address(usdc);
+
+        vm.expectRevert("LGE Migration: L2 address recipient restricted.");
+        lgeStaking.migrate(address(1001), tokens);
     }
 
     function testMigrateSuccessConditions() public prank(alice) {

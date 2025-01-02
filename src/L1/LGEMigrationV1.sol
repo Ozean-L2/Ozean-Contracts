@@ -34,6 +34,9 @@ contract LGEMigrationV1 is Ownable, ILGEMigration, ReentrancyGuard {
     /// @notice A mapping from Layer 1 token addresses to their corresponding Layer 2 addresses.
     mapping(address => address) public l1ToL2Addresses;
 
+    /// @notice A mapping that identifies invalid L2 migration address recipients.
+    mapping(address => bool) public restrictedL2Addresses;
+
     /// @notice A mapping from Layer 1 token address to the gas limits passed to the bridge contracts.
     mapping(address => uint32) public gasLimits;
 
@@ -46,7 +49,8 @@ contract LGEMigrationV1 is Ownable, ILGEMigration, ReentrancyGuard {
         address _usdc,
         address _wstETH,
         address[] memory _l1Addresses,
-        address[] memory _l2Addresses
+        address[] memory _l2Addresses,
+        address[] memory _restrictedL2Addresses
     ) {
         _transferOwnership(_owner);
         l1StandardBridge = IL1StandardBridge(_l1StandardBridge);
@@ -64,6 +68,10 @@ contract LGEMigrationV1 is Ownable, ILGEMigration, ReentrancyGuard {
             l1ToL2Addresses[_l1Addresses[i]] = _l2Addresses[i];
             gasLimits[_l1Addresses[i]] = 21000;
         }
+        length = _restrictedL2Addresses.length;
+        for (uint256 j; j < length; ++j) {
+            restrictedL2Addresses[_restrictedL2Addresses[j]] = true;
+        }
     }
 
     /// @notice This function is called by the LGE Staking contract to facilitate migration of staked tokens from
@@ -76,8 +84,12 @@ contract LGEMigrationV1 is Ownable, ILGEMigration, ReentrancyGuard {
         nonReentrant
     {
         require(msg.sender == lgeStaking, "LGE Migration: Only the staking contract can call this function.");
+        require(!restrictedL2Addresses[_l2Destination], "LGE Migration: L2 address recipient restricted.");
         uint256 length = _tokens.length;
         for (uint256 i; i < length; i++) {
+            require(
+                l1ToL2Addresses[_tokens[i]] != address(0), "LGE Migration: L2 address not set for migration."
+            );
             if (_tokens[i] == usdc) {
                 /// Handle USDC
                 IERC20(_tokens[i]).safeApprove(address(usdxBridge), _amounts[i]);
