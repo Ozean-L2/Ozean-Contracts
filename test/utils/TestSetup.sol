@@ -57,7 +57,7 @@ contract TestSetup is Test {
     /// FORK L1 ///
 
     function _forkL1() internal {
-        string memory rpcURL = vm.envString("L1_RPC_URL");
+        string memory rpcURL = vm.envString("L1_TESTNET_RPC_URL");
         uint256 l1Fork = vm.createFork(rpcURL);
         vm.selectFork(l1Fork);
         /// Environment
@@ -92,7 +92,7 @@ contract TestSetup is Test {
     /// FORK L2 ///
 
     function _forkL2() internal {
-        string memory rpcURL = vm.envString("L2_RPC_URL");
+        string memory rpcURL = vm.envString("L2_TESTNET_RPC_URL");
         uint256 l2Fork = vm.createFork(rpcURL);
         vm.selectFork(l2Fork);
         /// Environment
