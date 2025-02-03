@@ -8,11 +8,11 @@ import {SystemConfig} from "optimism/src/L1/SystemConfig.sol";
 import {L1StandardBridge} from "optimism/src/L1/L1StandardBridge.sol";
 import {IUSDX, IERC20Faucet, IERC20} from "test/utils/TestInterfaces.sol";
 import {IStETH, IWstETH} from "test/utils/TestInterfaces.sol";
-import {USDXBridge} from "src/L1/USDXBridge.sol";
-import {LGEStaking} from "src/L1/LGEStaking.sol";
-import {LGEMigrationV1, IL1LidoTokensBridge} from "src/L1/LGEMigrationV1.sol";
-import {OzUSD} from "src/L2/OzUSD.sol";
-import {WozUSD} from "src/L2/WozUSD.sol";
+import {USDXBridge} from "@src/L1/USDXBridge.sol";
+import {LGEStaking} from "@src/L1/LGEStaking.sol";
+import {LGEMigrationV1, IL1LidoTokensBridge} from "@src/L1/LGEMigrationV1.sol";
+import {OzUSD} from "@src/L2/OzUSD.sol";
+import {WozUSD} from "@src/L2/WozUSD.sol";
 
 contract TestSetup is Test {
     /// L1
@@ -43,7 +43,7 @@ contract TestSetup is Test {
     address public bob;
 
     function setUp() public virtual {
-        hexTrust = makeAddr("HEX_TRUST");
+        hexTrust = vm.envAddress("ADMIN");
         alice = makeAddr("ALICE");
         bob = makeAddr("BOB");
     }
@@ -56,7 +56,7 @@ contract TestSetup is Test {
 
     /// FORK L1 ///
 
-    function _forkL1() internal {
+    function _forkL1Sepolia() internal {
         string memory rpcURL = vm.envString("L1_TESTNET_RPC_URL");
         uint256 l1Fork = vm.createFork(rpcURL);
         vm.selectFork(l1Fork);

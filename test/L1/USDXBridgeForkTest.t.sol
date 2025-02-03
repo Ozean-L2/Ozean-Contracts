@@ -6,8 +6,8 @@ import {TestERC20Decimals, TestERC20DecimalsFeeOnTransfer} from "test/utils/Mock
 import {AddressAliasHelper} from "optimism/src/vendor/AddressAliasHelper.sol";
 import {USDXBridgeDeploy, USDXBridge} from "script/L1/USDXBridgeDeploy.s.sol";
 
-/// @dev forge test --match-contract USDXBridgeForkTest
-contract USDXBridgeForkTest is TestSetup {
+/// @dev forge test --match-contract USDXBridgeForkSepoliaTest
+contract USDXBridgeForkSepoliaTest is TestSetup {
     /// USDXBridge
     event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _to);
     event WithdrawCoins(address indexed _coin, uint256 _amount, address indexed _to);
@@ -19,11 +19,10 @@ contract USDXBridgeForkTest is TestSetup {
 
     function setUp() public override {
         super.setUp();
-        _forkL1();
-
+        _forkL1Sepolia();
+        
         /// Deploy USDXBridge
         USDXBridgeDeploy deployScript = new USDXBridgeDeploy();
-        deployScript.setUp(hexTrust, address(usdc), address(usdt), address(dai), optimismPortal, systemConfig);
         deployScript.run();
         usdxBridge = deployScript.usdxBridge();
     }

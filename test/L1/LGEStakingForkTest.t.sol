@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-import {TestSetup, USDXBridge} from "test/utils/TestSetup.sol";
+import {TestSetup, USDXBridge, console} from "test/utils/TestSetup.sol";
 import {TestERC20Decimals, TestERC20DecimalsFeeOnTransfer} from "test/utils/Mocks.sol";
 import {LGEStakingDeploy, LGEStaking} from "script/L1/LGEStakingDeploy.s.sol";
 import {LGEMigrationDeploy, LGEMigrationV1} from "script/L1/LGEMigrationDeploy.s.sol";
 
-/// @dev forge test --match-contract LGEStakingForkTest
-contract LGEStakingForkTest is TestSetup {
+/// @dev forge test --match-contract LGEStakingForkSepoliaTest
+contract LGEStakingForkSepoliaTest is TestSetup {
     /// LGEStaking events
     event Deposit(address indexed _token, uint256 _amount, address indexed _to);
     event Withdraw(address indexed _token, uint256 _amount, address indexed _to);
@@ -26,7 +26,7 @@ contract LGEStakingForkTest is TestSetup {
 
     function setUp() public override {
         super.setUp();
-        _forkL1();
+        _forkL1Sepolia();
 
         /// @dev Replace USDXBridge for migration tests
         usdxBridge = USDXBridge(0x084C27a0bE5dF26ed47F00678027A6E76B14a0B4);
@@ -45,7 +45,6 @@ contract LGEStakingForkTest is TestSetup {
         depositCaps[3] = 1e24;
 
         LGEStakingDeploy stakingDeployScript = new LGEStakingDeploy();
-        stakingDeployScript.setUp(hexTrust, address(stETH), address(wstETH), l1Addresses, depositCaps);
         stakingDeployScript.run();
         lgeStaking = stakingDeployScript.lgeStaking();
 
@@ -63,18 +62,7 @@ contract LGEStakingForkTest is TestSetup {
         restrictedL2Addresses[1] = address(1001);
 
         LGEMigrationDeploy migrationDeployScript = new LGEMigrationDeploy();
-        migrationDeployScript.setUp(
-            hexTrust,
-            address(l1StandardBridge),
-            address(l1LidoTokensBridge),
-            address(usdxBridge),
-            address(lgeStaking),
-            address(usdc),
-            address(wstETH),
-            l1Addresses,
-            l2Addresses,
-            restrictedL2Addresses
-        );
+        migrationDeployScript.setUp(address(usdxBridge), address(lgeStaking));
         migrationDeployScript.run();
         lgeMigration = migrationDeployScript.lgeMigration();
     }

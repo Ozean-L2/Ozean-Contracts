@@ -17,7 +17,6 @@ contract OzUSDForkTest is TestSetup {
         _forkL2();
 
         OzUSDDeploy deployScript = new OzUSDDeploy();
-        deployScript.setUp(hexTrust);
         deployScript.run();
         ozUSD = deployScript.ozUSD();
     }

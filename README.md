@@ -58,3 +58,8 @@ TBD
 | **ozUSD Impl (DEPRECATED)** | [0x9e76FE3E3859A4BF1C30d2DAD7b3C35d8654Eb50](https://ozean-testnet.explorer.caldera.xyz/address/0x9e76FE3E3859A4BF1C30d2DAD7b3C35d8654Eb50)|
 | **ozUSD Proxy (DEPRECATED)** | [0x1Ce4888a6dED8d6aE5F5D9ca1CABc758c680950b](https://ozean-testnet.explorer.caldera.xyz/address/0x1Ce4888a6dED8d6aE5F5D9ca1CABc758c680950b)|
 | **wozUSD** | [0x2f6807b76c426527C3a5C442E8697f12C554195b](https://ozean-testnet.explorer.caldera.xyz/address/0x2f6807b76c426527C3a5C442E8697f12C554195b)|
+
+
+### TECH DEBT
+
+- Several remappings are un-intuitive and only made to navigate audit milestones + dependency bad practices. Before next audit, clean up with more liberal use of interfaces.

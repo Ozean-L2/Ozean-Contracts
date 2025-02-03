@@ -13,7 +13,6 @@ contract WozUSDForkTest is TestSetup {
 
         /// Deploy OzUSD
         OzUSDDeploy ozDeployScript = new OzUSDDeploy();
-        ozDeployScript.setUp(hexTrust);
         ozDeployScript.run();
         ozUSD = OzUSD(payable(ozDeployScript.ozUSD()));
 
