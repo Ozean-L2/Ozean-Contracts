@@ -10,6 +10,8 @@ import {ILGEMigration} from "./interface/ILGEMigration.sol";
 /// @title  LGE Migration V1
 /// @notice This contract facilitates the migration of staked tokens from the LGE Staking pool
 ///         on Layer 1 to the Ozean Layer 2.
+/// @dev    !!! DEPRECATED !!! 
+///         This contract needs to be updated to handle the new bridge paths, DO NOT DEPLOY WITHOUT UPGRADING
 contract LGEMigrationV1 is Ownable, ILGEMigration, ReentrancyGuard {
     using SafeERC20 for IERC20;
 

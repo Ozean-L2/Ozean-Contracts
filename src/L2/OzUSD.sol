@@ -15,6 +15,8 @@ import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
 ///         events.
 ///         This contract is inspired by Lido's stETH contract:
 ///         https://vscode.blockscan.com/ethereum/0x17144556fd3424edc8fc8a4c940b2d04936d17eb
+/// @dev    !!! DEPRECATED !!! 
+///         This contract was built for the custom gas token OP L2 branch, DO NOT DEPLOY FOR THE STANDARD OP CONFIG
 contract OzUSD is IERC20, ReentrancyGuard, Pausable, Ownable {
     /// @notice The name of the token, Ozean USD.
     string public constant name = "Ozean USD";

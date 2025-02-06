@@ -10,6 +10,8 @@ import {OzUSD} from "./OzUSD.sol";
 /// @dev    The contract wraps ozUSD into wozUSD, which represents shares of ozUSD.
 ///         This contract is inspired by Lido's wstETH contract:
 ///         https://vscode.blockscan.com/ethereum/0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0
+/// @dev    !!! DEPRECATED !!! 
+///         This contract was built for the custom gas token OP L2 branch, DO NOT DEPLOY FOR THE STANDARD OP CONFIG
 contract WozUSD is ERC20, ReentrancyGuard {
     /// @notice The instance of the ozUSD contract.
     OzUSD public immutable ozUSD;
