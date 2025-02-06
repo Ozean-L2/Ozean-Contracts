@@ -14,6 +14,9 @@ import {SystemConfig} from "optimism/src/L1/SystemConfig.sol";
 ///         the L2 via the Optimism Portal contract. The owner of this contract can modify the set of
 ///         allow-listed stablecoins accepted, along with the deposit caps, and can also withdraw any deposited
 ///         ERC20 tokens.
+
+/// @dev    !!! DEPRECATED !!! 
+///         This contract was built for the custom gas token OP L2 branch, DO NOT DEPLOY FOR THE STANDARD OP CONFIG
 contract USDXBridge is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20Decimals;
 
