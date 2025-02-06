@@ -93,7 +93,7 @@ contract LGEStakingForkSepoliaTest is TestSetup {
         depositCaps[1] = 1e30;
         depositCaps[2] = 1e30;
         vm.expectRevert("LGE Staking: Duplicate tokens.");
-        lgeStaking = new LGEStaking(hexTrust, address(stETH), address(wstETH), l1Addresses, depositCaps);
+        lgeStaking = new LGEStaking(hexTrust, l1Addresses, depositCaps);
     }
 
     function testDeployRevertWithUnequalArrayLengths() public {
@@ -106,7 +106,7 @@ contract LGEStakingForkSepoliaTest is TestSetup {
         depositCaps[0] = 1e30;
         depositCaps[1] = 1e30;
         vm.expectRevert("LGE Staking: Tokens array length must equal the Deposit Caps array length.");
-        lgeStaking = new LGEStaking(hexTrust, address(stETH), address(wstETH), l1Addresses, depositCaps);
+        lgeStaking = new LGEStaking(hexTrust, l1Addresses, depositCaps);
 
         /// LGE Migration
         vm.expectRevert("LGE Migration: L1 addresses array length must equal the L2 addresses array length.");
@@ -180,54 +180,6 @@ contract LGEStakingForkSepoliaTest is TestSetup {
         assertEq(usdc.balanceOf(address(lgeStaking)), _amount);
     }
 
-    /// DEPOSIT ETH ///
-
-    function testDepositETHFailureConditions() public prank(hexTrust) {
-        vm.deal(hexTrust, 10000 ether);
-
-        /// Amount zero
-        vm.expectRevert("LGE Staking: May not deposit nothing.");
-        lgeStaking.depositETH{value: 0}();
-
-        /// Migration activated
-        lgeStaking.setMigrationContract(address(lgeMigration));
-        assertEq(lgeStaking.migrationActivated(), true);
-        vm.expectRevert("LGE Staking: May not deposit once migration has been activated.");
-        lgeStaking.depositETH{value: 1 ether}();
-
-        lgeStaking.setMigrationContract(address(0));
-
-        /// Not allowlisted
-        lgeStaking.setAllowlist(address(wstETH), false);
-        vm.expectRevert("LGE Staking: Token must be allowlisted.");
-        lgeStaking.depositETH{value: 1 ether}();
-
-        lgeStaking.setAllowlist(address(wstETH), true);
-
-        /// Exceeding deposit caps
-        lgeStaking.setDepositCap(address(wstETH), 1 ether);
-        vm.expectRevert("LGE Staking: deposit amount exceeds deposit cap.");
-        lgeStaking.depositETH{value: 10 ether}();
-    }
-
-    function testDepositETHSuccessConditions() public prank(alice) {
-        uint256 _amount = 10 ether;
-
-        assertEq(lgeStaking.balance(address(wstETH), alice), 0);
-        assertEq(lgeStaking.totalDeposited(address(wstETH)), 0);
-        assertEq(wstETH.balanceOf(address(lgeStaking)), 0);
-
-        uint256 predictedWSTETHAmount = wstETH.getWstETHByStETH(_amount) - 1;
-
-        vm.expectEmit(true, true, true, true);
-        emit Deposit(address(wstETH), predictedWSTETHAmount, alice);
-        lgeStaking.depositETH{value: _amount}();
-
-        assertEq(lgeStaking.balance(address(wstETH), alice), predictedWSTETHAmount);
-        assertEq(lgeStaking.totalDeposited(address(wstETH)), predictedWSTETHAmount);
-        assertEq(wstETH.balanceOf(address(lgeStaking)), predictedWSTETHAmount);
-    }
-
     /// WITHDRAW ///
 
     function testWithdrawFailureConditions() public prank(alice) {
@@ -261,28 +213,6 @@ contract LGEStakingForkSepoliaTest is TestSetup {
         assertEq(lgeStaking.balance(address(usdc), alice), _amount0 - _amount1);
         assertEq(lgeStaking.totalDeposited(address(usdc)), _amount0 - _amount1);
         assertEq(usdc.balanceOf(address(lgeStaking)), _amount0 - _amount1);
-    }
-
-    function testDepositETHAndWithdrawSuccessConditions() public prank(alice) {
-        uint256 _amount0 = 10 ether;
-        uint256 predictedWSTETHAmount = wstETH.getWstETHByStETH(_amount0) - 1;
-        uint256 _amount1 = 1 ether;
-
-        vm.expectEmit(true, true, true, true);
-        emit Deposit(address(wstETH), predictedWSTETHAmount, alice);
-        lgeStaking.depositETH{value: _amount0}();
-
-        assertEq(lgeStaking.balance(address(wstETH), alice), predictedWSTETHAmount);
-        assertEq(lgeStaking.totalDeposited(address(wstETH)), predictedWSTETHAmount);
-        assertEq(wstETH.balanceOf(address(lgeStaking)), predictedWSTETHAmount);
-
-        vm.expectEmit(true, true, true, true);
-        emit Withdraw(address(wstETH), _amount1, alice);
-        lgeStaking.withdraw(address(wstETH), _amount1);
-
-        assertEq(lgeStaking.balance(address(wstETH), alice), predictedWSTETHAmount - _amount1);
-        assertEq(lgeStaking.totalDeposited(address(wstETH)), predictedWSTETHAmount - _amount1);
-        assertEq(wstETH.balanceOf(address(lgeStaking)), predictedWSTETHAmount - _amount1);
     }
 
     /// MIGRATE ///
@@ -591,9 +521,6 @@ contract LGEStakingForkSepoliaTest is TestSetup {
         /// External functions paused
         vm.expectRevert("Pausable: paused");
         lgeStaking.depositERC20(address(usdc), 1e18);
-
-        vm.expectRevert("Pausable: paused");
-        lgeStaking.depositETH{value: 1e18}();
 
         vm.expectRevert("Pausable: paused");
         lgeStaking.withdraw(address(usdc), 1e18);

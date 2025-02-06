@@ -15,13 +15,6 @@ import {ILGEMigration} from "src/L1/interface/ILGEMigration.sol";
 contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
-    /// @notice The contract address for Lido's staked ether.
-    address public immutable stETH;
-
-    /// @notice The contract address for Lido's wrapped staked ether.
-    /// @dev    All ETH deposits are converted to wstETH on deposit.
-    address public immutable wstETH;
-
     /// @notice The migration contract that facilitates unstaking and deposits to the Ozean L2.
     ILGEMigration public lgeMigration;
 
@@ -66,15 +59,10 @@ contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
 
     constructor(
         address _owner,
-        address _stETH,
-        address _wstETH,
         address[] memory _tokens,
         uint256[] memory _depositCaps
     ) {
         _transferOwnership(_owner);
-        stETH = _stETH;
-        wstETH = _wstETH;
-        IstETH(stETH).approve(wstETH, ~uint256(0));
         uint256 length = _tokens.length;
         require(
             length == _depositCaps.length, "LGE Staking: Tokens array length must equal the Deposit Caps array length."
@@ -110,23 +98,6 @@ contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
         balance[_token][msg.sender] += _amount;
         totalDeposited[_token] += _amount;
         emit Deposit(_token, _amount, msg.sender);
-    }
-
-    /// @notice Deposits ETH into the staking contract, converting it to wstETH.
-    /// @dev    All ETH is converted to wstETH on deposit.
-    function depositETH() external payable nonReentrant whenNotPaused {
-        require(!migrationActivated(), "LGE Staking: May not deposit once migration has been activated.");
-        require(msg.value > 0, "LGE Staking: May not deposit nothing.");
-        require(allowlisted[wstETH], "LGE Staking: Token must be allowlisted.");
-        IstETH(stETH).submit{value: msg.value}(address(0));
-        uint256 wstETHAmount = IwstETH(wstETH).wrap(IstETH(stETH).balanceOf(address(this)));
-        require(
-            totalDeposited[wstETH] + wstETHAmount <= depositCap[wstETH],
-            "LGE Staking: deposit amount exceeds deposit cap."
-        );
-        balance[wstETH][msg.sender] += wstETHAmount;
-        totalDeposited[wstETH] += wstETHAmount;
-        emit Deposit(wstETH, wstETHAmount, msg.sender);
     }
 
     /// WITHDRAW ///

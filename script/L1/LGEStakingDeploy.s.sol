@@ -9,27 +9,19 @@ contract LGEStakingDeploy is ScriptUtils {
     function run() external broadcast {
         /// Environment Vars
         address hexTrust;
-        address stETH;
-        address wstETH;
         address[] memory tokens;
         uint256[] memory depositCaps;
         if (block.chainid == 1) {
             hexTrust = vm.envAddress("ADMIN");
-            stETH = vm.envAddress("L1_MAINNET_STETH");
-            wstETH = vm.envAddress("L1_MAINNET_WSTETH");
             tokens = vm.envAddress("L1_MAINNET_LGE_TOKENS", ",");
             depositCaps = vm.envUint("L1_MAINNET_LGE_CAPS", ",");
         } else if (block.chainid == 11155111) {
             hexTrust = vm.envAddress("ADMIN");
-            stETH = vm.envAddress("L1_SEPOLIA_STETH");
-            wstETH = vm.envAddress("L1_SEPOLIA_WSTETH");
             tokens = vm.envAddress("L1_SEPOLIA_LGE_TOKENS", ",");
             depositCaps = vm.envUint("L1_SEPOLIA_LGE_CAPS", ",");
         } else revert();
         /// Pre-deploy checks
         require(hexTrust != address(0), "Script: Zero address.");
-        require(stETH != address(0), "Script: Zero address.");
-        require(wstETH != address(0), "Script: Zero address.");
         uint256 length = tokens.length;
         require(length == depositCaps.length, "Script: Unequal length.");
         for (uint256 i; i < length; i++) {
@@ -37,9 +29,9 @@ contract LGEStakingDeploy is ScriptUtils {
             require(depositCaps[i] != 0, "Script: Zero amount.");
         }
         /// Deploy
-        bytes memory deployData = abi.encode(hexTrust, stETH, wstETH, tokens, depositCaps);
+        bytes memory deployData = abi.encode(hexTrust, tokens, depositCaps);
         console.logBytes(deployData);
-        lgeStaking = new LGEStaking(hexTrust, stETH, wstETH, tokens, depositCaps);
+        lgeStaking = new LGEStaking(hexTrust, tokens, depositCaps);
         /// Post-deploy checks
         require(lgeStaking.owner() == hexTrust, "Script: Wrong owner.");
         require(address(lgeStaking.lgeMigration()) == address(0), "Script: Migration is set.");
