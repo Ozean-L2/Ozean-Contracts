@@ -10,7 +10,28 @@ This is a [Foundry](https://book.getfoundry.sh/) repo for the set of custom Ozea
 
 ### Mainnet
 
-TBD
+#### Contracts:
+
+| **Contract** | **Address** |
+|:---:|:---:|
+| **LGE Staking** | [0xdD4297dECCE33fdA78dB8330832b51F3df610db9](https://sepolia.etherscan.io/address/0xdD4297dECCE33fdA78dB8330832b51F3df610db9#code)|
+
+#### LGE Staking Assets/Cap:
+
+| **Asset** | **Address** | **Deposit Cap** | **Decimals** |
+|:---:|:---:|:---:|:---:|
+| **WBTC** | [0x2260fac5e5542a773aa44fbcfedf7c193bc2c599](https://etherscan.io/address/0x2260fac5e5542a773aa44fbcfedf7c193bc2c599)| 100_000_000 | 8 |
+| **SolvBTC** | [0x7a56e1c57c7475ccf742a1832b028f0456652f97](https://etherscan.io/address/0x7a56e1c57c7475ccf742a1832b028f0456652f97)| 100_000_000 | 18 |
+| **WSOL** | [0xD31a59c85aE9D8edEFeC411D448f90841571b89c](https://etherscan.io/address/0xD31a59c85aE9D8edEFeC411D448f90841571b89c)| 100_000_000 | 9 |
+| **WstETH** | [0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0](https://etherscan.io/address/0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0)| 100_000_000 | 18 |
+| **WETH** | [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2](https://etherscan.io/address/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2)| 100_000_000 | 18 |
+| **SUSDE** | [0x9D39A5DE30e57443BfF2A8307A4256c8797A3497](https://etherscan.io/address/0x9D39A5DE30e57443BfF2A8307A4256c8797A3497)| 100_000_000 | 18 |
+| **USDY** | [0x96F6eF951840721AdBF46Ac996b59E0235CB985C](https://etherscan.io/address/0x96F6eF951840721AdBF46Ac996b59E0235CB985C)| 100_000_000 | 18 |
+| **WUSDM** | [0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812](https://etherscan.io/address/0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812)| 100_000_000 | 18 |
+| **USDX** | [0xf8750b54d86BE7aE9e32b4A0C826811198D63313](https://etherscan.io/address/0xf8750b54d86BE7aE9e32b4A0C826811198D63313)| 100_000_000 | 18 |
+| **USDC** | [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48](https://etherscan.io/address/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)| 100_000_000 | 6 |
+
+[**LGE Staking Admin**](https://etherscan.io/address/0x8A358c6ef869e3A1110398cC12581deB5946eB1a#code)
 
 ### Sepolia
 
