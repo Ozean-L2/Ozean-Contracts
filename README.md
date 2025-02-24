@@ -14,7 +14,7 @@ This is a [Foundry](https://book.getfoundry.sh/) repo for the set of custom Ozea
 
 | **Contract** | **Address** |
 |:---:|:---:|
-| **LGE Staking** | [0xdD4297dECCE33fdA78dB8330832b51F3df610db9](https://sepolia.etherscan.io/address/0xdD4297dECCE33fdA78dB8330832b51F3df610db9#code)|
+| **LGE Staking** | [0xdD4297dECCE33fdA78dB8330832b51F3df610db9](https://eth.blockscout.com/address/0xdD4297dECCE33fdA78dB8330832b51F3df610db9?tab=contract_source_code)|
 
 #### LGE Staking Assets/Cap:
 
