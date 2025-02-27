@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import {ScriptUtils, console} from "script/utils/ScriptUtils.sol";
-import {LGEMigrationV1} from "@src/L1/LGEMigrationV1.sol";
+import {LGEMigrationV1} from "src/L1/LGEMigrationV1.sol";
 
 contract LGEMigrationDeploy is ScriptUtils {
     LGEMigrationV1 public lgeMigration;

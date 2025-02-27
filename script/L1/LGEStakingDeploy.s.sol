@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import {ScriptUtils, console} from "script/utils/ScriptUtils.sol";
-import {LGEStaking} from "@src/L1/LGEStaking.sol";
+import {LGEStaking} from "src/L1/LGEStaking.sol";
 
 contract LGEStakingDeploy is ScriptUtils {
     LGEStaking public lgeStaking;

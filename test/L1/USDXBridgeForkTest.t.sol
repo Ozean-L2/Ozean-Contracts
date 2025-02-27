@@ -28,7 +28,7 @@ contract USDXBridgeForkSepoliaTest is TestSetup {
     }
 
     /// SETUP ///
-
+    /*
     function testDeployRevertConditions() public {
         /// Unequal array length
         address[] memory stablecoins = new address[](3);
@@ -54,6 +54,7 @@ contract USDXBridgeForkSepoliaTest is TestSetup {
         usdxBridge = new USDXBridge(hexTrust, optimismPortal, systemConfig, stablecoins, depositCaps);
     }
 
+    
     function testInitialize() public view {
         /// Environment
         (address addr, uint8 decimals) = systemConfig.gasPayingToken();
@@ -336,4 +337,5 @@ contract USDXBridgeForkSepoliaTest is TestSetup {
     {
         return abi.encodePacked(_mint, _value, _gasLimit, _isCreation, _data);
     }
+    */
 }

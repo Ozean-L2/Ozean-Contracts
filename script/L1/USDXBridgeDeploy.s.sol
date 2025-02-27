@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 import {ScriptUtils, console} from "script/utils/ScriptUtils.sol";
-import {USDXBridge} from "@src/L1/USDXBridge.sol";
+import {USDXBridge} from "src/L1/USDXBridge.sol";
 import {OptimismPortal} from "optimism/src/L1/OptimismPortal.sol";
 import {SystemConfig} from "optimism/src/L1/SystemConfig.sol";
 

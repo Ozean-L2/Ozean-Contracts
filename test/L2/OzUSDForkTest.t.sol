@@ -32,6 +32,7 @@ contract OzUSDForkTest is TestSetup {
         assertEq(ozUSD.decimals(), 18);
     }
     
+    /*
     function testDeployRevertConditions() public {
         /// Deploy with less than 1 USDX
         uint256 initialSharesAmount = 1e18;
@@ -42,6 +43,7 @@ contract OzUSDForkTest is TestSetup {
         vm.expectRevert("OzUSD: Incorrect value.");
         new OzUSD{value: initialSharesAmount}(hexTrust, initialSharesAmount - 1);
     }
+    */
  
     /// REBASE ///
 

@@ -8,11 +8,11 @@ import {SystemConfig} from "optimism/src/L1/SystemConfig.sol";
 import {L1StandardBridge} from "optimism/src/L1/L1StandardBridge.sol";
 import {IUSDX, IERC20Faucet, IERC20} from "test/utils/TestInterfaces.sol";
 import {IStETH, IWstETH} from "test/utils/TestInterfaces.sol";
-import {USDXBridge} from "@src/L1/USDXBridge.sol";
-import {LGEStaking} from "@src/L1/LGEStaking.sol";
-import {LGEMigrationV1, IL1LidoTokensBridge} from "@src/L1/LGEMigrationV1.sol";
-import {OzUSD} from "@src/L2/OzUSD.sol";
-import {WozUSD} from "@src/L2/WozUSD.sol";
+import {USDXBridge} from "src/L1/USDXBridge.sol";
+import {LGEStaking} from "src/L1/LGEStaking.sol";
+import {LGEMigrationV1, IL1LidoTokensBridge} from "src/L1/LGEMigrationV1.sol";
+import {OzUSD} from "src/L2/OzUSD.sol";
+import {WozUSD} from "src/L2/WozUSD.sol";
 
 contract TestSetup is Test {
     /// L1
