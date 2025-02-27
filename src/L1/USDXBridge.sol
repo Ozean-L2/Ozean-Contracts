@@ -5,8 +5,6 @@ import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {OptimismPortal} from "optimism/src/L1/OptimismPortal.sol";
-import {SystemConfig} from "optimism/src/L1/SystemConfig.sol";
 
 /// @title  USDX Bridge
 /// @notice This contract provides bridging functionality for allow-listed stablecoins to the Ozean Layer L2.
@@ -14,17 +12,15 @@ import {SystemConfig} from "optimism/src/L1/SystemConfig.sol";
 ///         the L2 via the Optimism Portal contract. The owner of this contract can modify the set of
 ///         allow-listed stablecoins accepted, along with the deposit caps, and can also withdraw any deposited
 ///         ERC20 tokens.
-/// @dev    !!! DEPRECATED !!! 
-///         This contract was built for the custom gas token OP L2 branch, DO NOT DEPLOY FOR THE STANDARD OP CONFIG
+/// @dev    Needs an audit
 contract USDXBridge is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20Decimals;
 
-    /// @notice Contract of the Optimism Portal.
-    /// @custom:network-specific
-    OptimismPortal public immutable portal;
+    IStandardBridge public immutable standardBridge;
 
-    /// @notice Address of the System Config contract.
-    SystemConfig public immutable config;
+    IUSDX public immutable l1USDX;
+
+    address public immutable l2USDX;
 
     /// @notice Addresses of allow-listed stablecoins.
     /// @dev    stablecoin => allowlisted
@@ -39,7 +35,7 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     mapping(address => uint256) public totalBridged;
 
     /// @notice The gas limit passed to the Optimism portal when depositing USDX.
-    uint64 public gasLimit;
+    uint32 public gasLimit;
 
     /// EVENTS ///
 
@@ -63,8 +59,9 @@ contract USDXBridge is Ownable, ReentrancyGuard {
 
     /// @notice The constructor contract set up.
     /// @param  _owner The address granted ownership rights to this contract.
-    /// @param  _portal The Optimism Portal contract, which is directly responsible for bridging USDX.
-    /// @param  _config The Optimism System Config contract, which ensures alignment on the gas token.
+    /// @param  _l1USDX The address for the USDX token on Ethereum mainnet.
+    /// @param  _l2USDX The address for the USDX token on Ozean mainnet.
+    /// @param  _standardBridge The address for the OP standard bridge.
     /// @param  _stablecoins An array of allow-listed stablecoins that can be used to mint and bridge USDX.
     /// @param  _depositCaps The deposit caps per stablecoin for this contract, which limits the total amount bridged.
     /// @dev    Ensure that the index for each deposit cap aligns with the index of the stablecoin that is allowlisted.
@@ -72,29 +69,28 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     ///         stablecoins is reasonable in length.
     constructor(
         address _owner,
-        OptimismPortal _portal,
-        SystemConfig _config,
+        address _l1USDX,
+        address _l2USDX,
+        address _standardBridge,
         address[] memory _stablecoins,
         uint256[] memory _depositCaps
     ) {
         _transferOwnership(_owner);
-        portal = _portal;
-        config = _config;
-        gasLimit = 21000;
-        /// Add allow-listed stablecoins and deposit caps
-        if (address(config) != address(0)) {
-            uint256 length = _stablecoins.length;
-            require(
-                length == _depositCaps.length,
-                "USDX Bridge: Stablecoins array length must equal the Deposit Caps array length."
-            );
-            for (uint256 i; i < length; ++i) {
-                require(_stablecoins[i] != address(0), "USDX Bridge: Zero address.");
-                allowlisted[_stablecoins[i]] = true;
-                emit AllowlistSet(_stablecoins[i], true);
-                depositCap[_stablecoins[i]] = _depositCaps[i];
-                emit DepositCapSet(_stablecoins[i], _depositCaps[i]);
-            }
+        l1USDX = IUSDX(_l1USDX);
+        l2USDX = _l2USDX;
+        standardBridge = IStandardBridge(payable(_standardBridge));
+        gasLimit = 1000;
+        uint256 length = _stablecoins.length;
+        require(
+            length == _depositCaps.length,
+            "USDX Bridge: Stablecoins array length must equal the Deposit Caps array length."
+        );
+        for (uint256 i; i < length; ++i) {
+            require(_stablecoins[i] != address(0), "USDX Bridge: Zero address.");
+            allowlisted[_stablecoins[i]] = true;
+            emit AllowlistSet(_stablecoins[i], true);
+            depositCap[_stablecoins[i]] = _depositCaps[i];
+            emit DepositCapSet(_stablecoins[i], _depositCaps[i]);
         }
     }
 
@@ -122,17 +118,11 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         );
         totalBridged[_stablecoin] += bridgeAmount;
         /// Mint USDX
-        usdx().mint(address(this), bridgeAmount);
+        l1USDX.mint(address(this), bridgeAmount);
         /// Bridge USDX
-        usdx().approve(address(portal), bridgeAmount);
-        portal.depositERC20Transaction({
-            _to: _to,
-            _mint: bridgeAmount,
-            _value: bridgeAmount,
-            _gasLimit: gasLimit,
-            _isCreation: false,
-            _data: ""
-        });
+        l1USDX.approve(address(standardBridge), bridgeAmount);
+        standardBridge.depositERC20To(address(l1USDX), l2USDX, _to, bridgeAmount, gasLimit, "");
+        /// @dev some check to ensure tokens are sent in case of soft-revert at the bridge
         emit BridgeDeposit(_stablecoin, _amount, _to);
     }
 
@@ -157,7 +147,7 @@ contract USDXBridge is Ownable, ReentrancyGuard {
 
     /// @notice This function allows the owner to modify the gas limit for USDX deposits.
     /// @param  _newGasLimit The new gas limit to be set for transactions.
-    function setGasLimit(uint64 _newGasLimit) external onlyOwner {
+    function setGasLimit(uint32 _newGasLimit) external onlyOwner {
         gasLimit = _newGasLimit;
         emit GasLimitSet(_newGasLimit);
     }
@@ -172,13 +162,6 @@ contract USDXBridge is Ownable, ReentrancyGuard {
 
     /// VIEW ///
 
-    /// @notice This view function returns the address, as the USDX interface, for minting and bridging.
-    /// @return IUSDX Interface and address.
-    function usdx() public view returns (IUSDX) {
-        (address addr,) = config.gasPayingToken();
-        return IUSDX(addr);
-    }
-
     /// @notice This view function normalises deposited amounts given diverging decimals for tokens and USDX.
     /// @param  _stablecoin The address of the deposited stablecoin.
     /// @param  _amount The amount of the stablecoin deposited.
@@ -186,7 +169,7 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     /// @dev    Assumes 1:1 conversion between the deposited stablecoin and USDX.
     function _getBridgeAmount(address _stablecoin, uint256 _amount) internal view returns (uint256) {
         uint8 depositDecimals = IERC20Decimals(_stablecoin).decimals();
-        uint8 usdxDecimals = usdx().decimals();
+        uint8 usdxDecimals = l1USDX.decimals();
         return (_amount * 10 ** usdxDecimals) / (10 ** depositDecimals);
     }
 }
@@ -201,4 +184,24 @@ interface IERC20Decimals is IERC20 {
 ///         of new USDX tokens by this bridge.
 interface IUSDX is IERC20Decimals {
     function mint(address to, uint256 amount) external;
+}
+
+interface IStandardBridge {
+    /// @notice Deposits some amount of ERC20 tokens into a target account on L2.
+    /// @param _l1Token     Address of the L1 token being deposited.
+    /// @param _l2Token     Address of the corresponding token on L2.
+    /// @param _to          Address of the recipient on L2.
+    /// @param _amount      Amount of the ERC20 to deposit.
+    /// @param _minGasLimit Minimum gas limit for the deposit message on L2.
+    /// @param _extraData   Optional data to forward to L2.
+    ///                     Data supplied here will not be used to execute any code on L2 and is
+    ///                     only emitted as extra data for the convenience of off-chain tooling.
+    function depositERC20To(
+        address _l1Token,
+        address _l2Token,
+        address _to,
+        uint256 _amount,
+        uint32 _minGasLimit,
+        bytes calldata _extraData
+    ) external;
 }
