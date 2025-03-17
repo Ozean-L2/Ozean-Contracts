@@ -31,7 +31,7 @@ contract OzUSDForkTest is TestSetup {
         assertEq(ozUSD.symbol(), "ozUSD");
         assertEq(ozUSD.decimals(), 18);
     }
-    
+
     /*
     function testDeployRevertConditions() public {
         /// Deploy with less than 1 USDX
@@ -44,7 +44,7 @@ contract OzUSDForkTest is TestSetup {
         new OzUSD{value: initialSharesAmount}(hexTrust, initialSharesAmount - 1);
     }
     */
- 
+
     /// REBASE ///
 
     function testMintRevertConditions() public prank(alice) {

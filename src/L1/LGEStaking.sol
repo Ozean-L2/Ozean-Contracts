@@ -57,11 +57,7 @@ contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
 
     /// SETUP ///
 
-    constructor(
-        address _owner,
-        address[] memory _tokens,
-        uint256[] memory _depositCaps
-    ) {
+    constructor(address _owner, address[] memory _tokens, uint256[] memory _depositCaps) {
         _transferOwnership(_owner);
         uint256 length = _tokens.length;
         require(

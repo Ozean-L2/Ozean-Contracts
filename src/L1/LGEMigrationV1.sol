@@ -10,7 +10,7 @@ import {ILGEMigration} from "./interface/ILGEMigration.sol";
 /// @title  LGE Migration V1
 /// @notice This contract facilitates the migration of staked tokens from the LGE Staking pool
 ///         on Layer 1 to the Ozean Layer 2.
-/// @dev    !!! DEPRECATED !!! 
+/// @dev    !!! DEPRECATED !!!
 ///         This contract needs to be updated to handle the new bridge paths, DO NOT DEPLOY WITHOUT UPGRADING
 contract LGEMigrationV1 is Ownable, ILGEMigration, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -89,9 +89,7 @@ contract LGEMigrationV1 is Ownable, ILGEMigration, ReentrancyGuard {
         require(!restrictedL2Addresses[_l2Destination], "LGE Migration: L2 address recipient restricted.");
         uint256 length = _tokens.length;
         for (uint256 i; i < length; i++) {
-            require(
-                l1ToL2Addresses[_tokens[i]] != address(0), "LGE Migration: L2 address not set for migration."
-            );
+            require(l1ToL2Addresses[_tokens[i]] != address(0), "LGE Migration: L2 address not set for migration.");
             if (_tokens[i] == usdc) {
                 /// Handle USDC
                 IERC20(_tokens[i]).safeApprove(address(usdxBridge), _amounts[i]);

@@ -30,7 +30,7 @@ contract OzUSD is IERC20, ReentrancyGuard, Pausable, Ownable {
     uint8 public constant decimals = 18;
 
     /// @notice Total number of shares in circulation for ozUSD.
-    /// @dev    This is used to calculate the rebased ozUSD balances. 
+    /// @dev    This is used to calculate the rebased ozUSD balances.
     uint256 private totalShares;
 
     /// @notice A mapping from addresses to shares controlled by each account.

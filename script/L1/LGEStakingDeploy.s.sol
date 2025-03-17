@@ -6,6 +6,7 @@ import {LGEStaking} from "src/L1/LGEStaking.sol";
 
 contract LGEStakingDeploy is ScriptUtils {
     LGEStaking public lgeStaking;
+
     function run() external broadcast {
         /// Environment Vars
         address hexTrust;
@@ -19,7 +20,9 @@ contract LGEStakingDeploy is ScriptUtils {
             hexTrust = vm.envAddress("ADMIN");
             tokens = vm.envAddress("L1_SEPOLIA_LGE_TOKENS", ",");
             depositCaps = vm.envUint("L1_SEPOLIA_LGE_CAPS", ",");
-        } else revert();
+        } else {
+            revert();
+        }
         /// Pre-deploy checks
         require(hexTrust != address(0), "Script: Zero address.");
         uint256 length = tokens.length;

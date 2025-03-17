@@ -133,7 +133,7 @@ contract LGEStakingForkSepoliaTest is TestSetup {
 
         /// Not allowlisted
         vm.expectRevert("LGE Staking: Token must be allowlisted.");
-        lgeStaking.depositERC20(address(88), 1);        
+        lgeStaking.depositERC20(address(88), 1);
 
         /// Exceeding deposit caps
         usdc.approve(address(lgeStaking), 1e13);

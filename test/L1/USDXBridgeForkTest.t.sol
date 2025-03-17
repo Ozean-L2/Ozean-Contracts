@@ -20,7 +20,7 @@ contract USDXBridgeForkSepoliaTest is TestSetup {
     function setUp() public override {
         super.setUp();
         _forkL1Sepolia();
-        
+
         /// Deploy USDXBridge
         USDXBridgeDeploy deployScript = new USDXBridgeDeploy();
         deployScript.run();

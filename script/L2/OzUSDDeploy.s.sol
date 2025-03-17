@@ -6,6 +6,7 @@ import {OzUSD, IERC20} from "src/L2/OzUSD.sol";
 
 contract OzUSDDeploy is ScriptUtils {
     OzUSD public ozUSD;
+
     function run() external payable broadcast {
         /// Environment Vars
         address hexTrust;
@@ -19,7 +20,9 @@ contract OzUSDDeploy is ScriptUtils {
             hexTrust = vm.envAddress("ADMIN");
             l2USDX = vm.envAddress("L2_SEPOLIA_USDX");
             initialSharesAmount = vm.envUint("INITIAL_SHARE_AMOUNT");
-        } else revert();
+        } else {
+            revert();
+        }
         require(hexTrust != address(0), "Script: Zero address.");
         require(l2USDX != address(0), "Script: Zero address.");
         require(initialSharesAmount == 1e18, "Script: Zero amount.");
