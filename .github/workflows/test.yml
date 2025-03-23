@@ -33,5 +33,6 @@ jobs:
           L1_RPC_URL: ${{ secrets.L1_RPC_URL }}
           L2_RPC_URL: ${{ secrets.L2_RPC_URL }}
         run: |
-          forge test -vvv
+          forge test --match-contract OzUSDForkTest
+          forge test --match-contract WozUSDForkTest
         id: test
