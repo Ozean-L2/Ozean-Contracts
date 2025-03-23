@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.15;
+pragma solidity 0.8.28;
 
 import {TestSetup} from "test/utils/TestSetup.sol";
 import {OzUSDDeploy, OzUSD} from "script/L2/OzUSDDeploy.s.sol";
@@ -14,7 +14,7 @@ contract WozUSDForkTest is TestSetup {
         /// Deploy OzUSD
         OzUSDDeploy ozDeployScript = new OzUSDDeploy();
         ozDeployScript.run();
-        ozUSD = OzUSD(payable(ozDeployScript.ozUSD()));
+        ozUSD = ozDeployScript.ozUSD();
 
         /// Deploy WozUSD
         WozUSDDeploy wozDeployScript = new WozUSDDeploy();
@@ -26,7 +26,7 @@ contract WozUSDForkTest is TestSetup {
     /// SETUP ///
 
     function testInitialize() public view {
-        assertEq(address(ozUSD).balance, 1e18);
+        assertEq(l2USDX.balanceOf(address(ozUSD)), 1e18);
         assertEq(wozUSD.totalSupply(), 0);
     }
 
@@ -43,7 +43,8 @@ contract WozUSDForkTest is TestSetup {
         uint256 sharesAmount = 1e18;
 
         /// Mint only half the amount
-        ozUSD.mintOzUSD{value: 0.5e18}(alice, 0.5e18);
+        l2USDX.approve(address(ozUSD), ~uint256(0));
+        ozUSD.mintOzUSD(alice, 0.5e18);
         ozUSD.approve(address(wozUSD), ~uint256(0));
 
         vm.expectRevert();
@@ -54,9 +55,10 @@ contract WozUSDForkTest is TestSetup {
 
     function testWrap() public prank(alice) {
         uint256 sharesAmount = 1e18;
-        assertEq(address(ozUSD).balance, 1e18);
+        assertEq(l2USDX.balanceOf(address(ozUSD)), 1e18);
         assertEq(ozUSD.getPooledUSDXByShares(sharesAmount), 1e18);
-        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
+        l2USDX.approve(address(ozUSD), ~uint256(0));
+        ozUSD.mintOzUSD(alice, 1e18);
 
         /// Wrap
         ozUSD.approve(address(wozUSD), ~uint256(0));
@@ -76,9 +78,10 @@ contract WozUSDForkTest is TestSetup {
 
     function testUnWrap() public prank(alice) {
         uint256 sharesAmount = 1e18;
-        assertEq(address(ozUSD).balance, 1e18);
+        assertEq(l2USDX.balanceOf(address(ozUSD)), 1e18);
         assertEq(ozUSD.getPooledUSDXByShares(sharesAmount), 1e18);
-        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
+        l2USDX.approve(address(ozUSD), ~uint256(0));
+        ozUSD.mintOzUSD(alice, 1e18);
 
         /// Wrap
         ozUSD.approve(address(wozUSD), ~uint256(0));
@@ -104,46 +107,55 @@ contract WozUSDForkTest is TestSetup {
 
     function testWrapAndRebase() public prank(alice) {
         uint256 sharesAmount = 1e18;
-        assertEq(address(ozUSD).balance, 1e18);
+        assertEq(l2USDX.balanceOf(address(ozUSD)), 1e18);
         assertEq(ozUSD.getPooledUSDXByShares(sharesAmount), 1e18);
-        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
+        l2USDX.approve(address(ozUSD), ~uint256(0));
+        ozUSD.mintOzUSD(alice, 1e18);
 
         /// Wrap
         ozUSD.approve(address(wozUSD), ~uint256(0));
         wozUSD.wrap(1e18);
 
-        (bool s,) = address(ozUSD).call{value: 1e18}("");
-        assert(s);
+        /// Rebase
+        vm.stopPrank();
+        vm.startPrank(hexTrust);
+        l2USDX.approve(address(ozUSD), 1e18);
+        ozUSD.distributeYield(1e18);
+        vm.stopPrank();
+        vm.startPrank(alice);
 
         /// Unwrap
         wozUSD.unwrap(1e18);
         assertEq(ozUSD.balanceOf(alice), 1.5e18);
     }
 
-    /// @dev fix this
-    /*
     function testWrapAndRebaseSmallAmount() public prank(alice) {
         uint256 sharesAmount = 0.001e18;
-        ozUSD.mintOzUSD{value: sharesAmount}(alice, sharesAmount);
+        l2USDX.approve(address(ozUSD), ~uint256(0));
+        ozUSD.mintOzUSD(alice, sharesAmount);
 
         /// Wrap
         ozUSD.approve(address(wozUSD), ~uint256(0));
         wozUSD.wrap(sharesAmount);
 
-        /// Mock rebase
-        (bool s,) = address(ozUSD).call{value: sharesAmount}("");
-        assert(s);
+        /// Rebase
+        vm.stopPrank();
+        vm.startPrank(hexTrust);
+        l2USDX.approve(address(ozUSD), 1e18);
+        ozUSD.distributeYield(1e18);
+        vm.stopPrank();
+        vm.startPrank(alice);
 
         /// Unwrap
         wozUSD.unwrap(sharesAmount);
         assertGt(ozUSD.balanceOf(alice), sharesAmount);
     }
-    */
 
     function testMultipleWrapUnwrap() public prank(alice) {
         uint256 sharesAmount = 1e18;
 
-        ozUSD.mintOzUSD{value: 1e18}(alice, 1e18);
+        l2USDX.approve(address(ozUSD), ~uint256(0));
+        ozUSD.mintOzUSD(alice, 1e18);
         ozUSD.approve(address(wozUSD), ~uint256(0));
 
         // First wrap

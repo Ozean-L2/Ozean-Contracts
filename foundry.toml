@@ -1,5 +1,5 @@
 [profile.default]
-solc-version = "0.8.15"
+solc-version = "0.8.28"
 evm_version = "cancun"
 libs = ['lib']
 optimizer = true
@@ -28,7 +28,8 @@ remappings = [
     'safe-contracts/=lib/optimism/packages/contracts-bedrock/lib/safe-contracts/contracts',
     'kontrol-cheatcodes/=lib/optimism/packages/contracts-bedrock/lib/kontrol-cheatcodes/src',
     'gelato/=lib/optimism/packages/contracts-bedrock/lib/automate/contracts',
-    'src/L1/interface/=src/L1/interface',
-    'src=lib/optimism/packages/contracts-bedrock/src/',
-    '@src=src'
+    'solidity-bytes-utils/=lib/solidity-bytes-utils',
+    '@layerzero/=lib/layerzero-v2/packages/layerzero-v2/evm',
+    '@layerzerolabs/lz-evm-protocol-v2/=lib/layerzero-v2/packages/layerzero-v2/evm/protocol',
+    '@layerzerolabs/lz-evm-messagelib-v2/=lib/layerzero-v2/packages/layerzero-v2/evm/messagelib'
 ]

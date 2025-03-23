@@ -6,6 +6,12 @@ This is a [Foundry](https://book.getfoundry.sh/) repo for the set of custom Ozea
 - `forge test -vvv`
 - `forge coverage --report lcov`
 
+## Layer Zero
+- [LayerZeroScan](https://testnet.layerzeroscan.com/)
+- [OFT Implementation](https://docs.layerzero.network/v2/developers/evm/oft/quickstart)
+- [Endpoints](https://docs.layerzero.network/v2/developers/evm/technical-reference/deployed-contracts)
+
+
 ## Layer One Deployments
 
 ### Mainnet
@@ -80,8 +86,3 @@ TBD
 | **ozUSD Proxy (DEPRECATED)** | [0x1Ce4888a6dED8d6aE5F5D9ca1CABc758c680950b](https://ozean-testnet.explorer.caldera.xyz/address/0x1Ce4888a6dED8d6aE5F5D9ca1CABc758c680950b)|
 | **wozUSD (DEPRECATED)**  | [0x2f6807b76c426527C3a5C442E8697f12C554195b](https://ozean-testnet.explorer.caldera.xyz/address/0x2f6807b76c426527C3a5C442E8697f12C554195b)|
 
-
-### TECH DEBT
-
-- Several remappings are un-intuitive and only made to navigate audit milestones + dependency bad practices. Before next audit, clean up with more liberal use of interfaces.
-- Most of these contracts are built for the OP custom gas token branch, which is now deprecated, everything except the `LGE Staking` contract needs updating for the new environment

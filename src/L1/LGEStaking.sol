@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.15;
+pragma solidity 0.8.28;
 
 import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -57,11 +57,7 @@ contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
 
     /// SETUP ///
 
-    constructor(
-        address _owner,
-        address[] memory _tokens,
-        uint256[] memory _depositCaps
-    ) {
+    constructor(address _owner, address[] memory _tokens, uint256[] memory _depositCaps) {
         _transferOwnership(_owner);
         uint256 length = _tokens.length;
         require(

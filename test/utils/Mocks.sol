@@ -18,7 +18,7 @@ contract TestERC20DecimalsFeeOnTransfer is ERC20 {
         _mint(to, value);
     }
 
-    function transfer(address to, uint256 amount) public  override returns (bool) {
+    function transfer(address to, uint256 amount) public override returns (bool) {
         balanceOf[msg.sender] -= amount;
         unchecked {
             balanceOf[to] += (amount - 1);
@@ -27,11 +27,7 @@ contract TestERC20DecimalsFeeOnTransfer is ERC20 {
         return true;
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) public override returns (bool) {
+    function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
         uint256 allowed = allowance[from][msg.sender];
         if (allowed != type(uint256).max) allowance[from][msg.sender] = allowed - amount;
         balanceOf[from] -= amount;

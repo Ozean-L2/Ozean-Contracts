@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.15;
+pragma solidity 0.8.28;
 
 import {ScriptUtils, console} from "script/utils/ScriptUtils.sol";
-import {LGEMigrationV1} from "@src/L1/LGEMigrationV1.sol";
+import {LGEMigrationV1} from "src/L1/LGEMigrationV1.sol";
 
 contract LGEMigrationDeploy is ScriptUtils {
     LGEMigrationV1 public lgeMigration;
@@ -11,10 +11,7 @@ contract LGEMigrationDeploy is ScriptUtils {
 
     /// @dev Used in testing environment
     ///      Unnecessary for mainnet deployment once predicates deployed
-    function setUp(
-        address _usdxBridge,
-        address _lgeStaking
-    ) external {
+    function setUp(address _usdxBridge, address _lgeStaking) external {
         usdxBridge = _usdxBridge;
         lgeStaking = _lgeStaking;
     }
@@ -51,7 +48,9 @@ contract LGEMigrationDeploy is ScriptUtils {
             l1Addresses = vm.envAddress("L1_SEPOLIA_ADDRESSES", ",");
             l2Addresses = vm.envAddress("L2_SEPOLIA_ADDRESSES", ",");
             restrictedL2Addresses = vm.envAddress("L2_SEPOLIA_RESTRICTED_ADDRESSES", ",");
-        } else revert();
+        } else {
+            revert();
+        }
         /// Pre-deploy checks
         require(hexTrust != address(0), "Script: Zero address.");
         require(l1StandardBridge != address(0), "Script: Zero address.");
@@ -94,6 +93,5 @@ contract LGEMigrationDeploy is ScriptUtils {
         );
         /// Post-deploy checks
         require(lgeMigration.owner() == hexTrust, "Script: Wrong owner.");
-        
     }
 }
