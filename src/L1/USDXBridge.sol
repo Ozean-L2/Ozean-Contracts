@@ -16,8 +16,6 @@ import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.s
 contract USDXBridge is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20Decimals;
 
-    IStandardBridge public immutable standardBridge;
-
     IUSDX public immutable l1USDX;
 
     address public immutable l2USDX;
@@ -61,7 +59,6 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     /// @param  _owner The address granted ownership rights to this contract.
     /// @param  _l1USDX The address for the USDX token on Ethereum mainnet.
     /// @param  _l2USDX The address for the USDX token on Ozean mainnet.
-    /// @param  _standardBridge The address for the OP standard bridge.
     /// @param  _stablecoins An array of allow-listed stablecoins that can be used to mint and bridge USDX.
     /// @param  _depositCaps The deposit caps per stablecoin for this contract, which limits the total amount bridged.
     /// @dev    Ensure that the index for each deposit cap aligns with the index of the stablecoin that is allowlisted.
@@ -71,15 +68,13 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         address _owner,
         address _l1USDX,
         address _l2USDX,
-        address _standardBridge,
         address[] memory _stablecoins,
         uint256[] memory _depositCaps
     ) {
         _transferOwnership(_owner);
         l1USDX = IUSDX(_l1USDX);
         l2USDX = _l2USDX;
-        standardBridge = IStandardBridge(payable(_standardBridge));
-        gasLimit = 1000;
+        gasLimit = 21000;
         uint256 length = _stablecoins.length;
         require(
             length == _depositCaps.length,
@@ -121,8 +116,8 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         l1USDX.mint(address(this), bridgeAmount);
         /// Bridge USDX
         /// @dev replace with LZ send
-        l1USDX.approve(address(standardBridge), bridgeAmount);
-        standardBridge.depositERC20To(address(l1USDX), l2USDX, _to, bridgeAmount, gasLimit, "");
+        //l1USDX.approve(address(standardBridge), bridgeAmount);
+        //standardBridge.depositERC20To(address(l1USDX), l2USDX, _to, bridgeAmount, gasLimit, "");
         /// @dev some check to ensure tokens are sent in case of soft-revert at the bridge
         emit BridgeDeposit(_stablecoin, _amount, _to);
     }
@@ -185,24 +180,40 @@ interface IERC20Decimals is IERC20 {
 ///         of new USDX tokens by this bridge.
 interface IUSDX is IERC20Decimals {
     function mint(address to, uint256 amount) external;
-}
 
-interface IStandardBridge {
-    /// @notice Deposits some amount of ERC20 tokens into a target account on L2.
-    /// @param _l1Token     Address of the L1 token being deposited.
-    /// @param _l2Token     Address of the corresponding token on L2.
-    /// @param _to          Address of the recipient on L2.
-    /// @param _amount      Amount of the ERC20 to deposit.
-    /// @param _minGasLimit Minimum gas limit for the deposit message on L2.
-    /// @param _extraData   Optional data to forward to L2.
-    ///                     Data supplied here will not be used to execute any code on L2 and is
-    ///                     only emitted as extra data for the convenience of off-chain tooling.
-    function depositERC20To(
-        address _l1Token,
-        address _l2Token,
-        address _to,
-        uint256 _amount,
-        uint32 _minGasLimit,
-        bytes calldata _extraData
-    ) external;
+    /**
+     * @dev Executes the send operation.
+     * @param _sendParam The parameters for the send operation.
+     * @param _fee The calculated fee for the send() operation.
+     *      - nativeFee: The native fee.
+     *      - lzTokenFee: The lzToken fee.
+     * @param _refundAddress The address to receive any excess funds.
+     * @return msgReceipt The receipt for the send operation.
+     * @return oftReceipt The OFT receipt information.
+     *
+     * @dev MessagingReceipt: LayerZero msg receipt
+     *  - guid: The unique identifier for the sent message.
+     *  - nonce: The nonce of the sent message.
+     *  - fee: The LayerZero fee incurred for the message.
+     */
+    function send(
+        SendParam calldata _sendParam,
+        MessagingFee calldata _fee,
+        address _refundAddress
+    ) external payable virtual returns (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt);
+
+    /**
+     * @notice Provides a quote for the send() operation.
+     * @param _sendParam The parameters for the send() operation.
+     * @param _payInLzToken Flag indicating whether the caller is paying in the LZ token.
+     * @return msgFee The calculated LayerZero messaging fee from the send() operation.
+     *
+     * @dev MessagingFee: LayerZero msg fee
+     *  - nativeFee: The native fee.
+     *  - lzTokenFee: The lzToken fee.
+     */
+    function quoteSend(
+        SendParam calldata _sendParam,
+        bool _payInLzToken
+    ) external view virtual returns (MessagingFee memory msgFee)
 }

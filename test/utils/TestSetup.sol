@@ -53,6 +53,35 @@ contract TestSetup is Test {
 
     /// FORK L1 ///
 
+    function _forkL1Mainnet() internal {
+        string memory rpcURL = vm.envString("L1_MAINNET_RPC_URL");
+        uint256 l1Fork = vm.createFork(rpcURL);
+        vm.selectFork(l1Fork);
+        /// Environment
+        vm.deal(hexTrust, 10_000 ether);
+        vm.deal(alice, 10_000 ether);
+        vm.deal(bob, 10_000 ether);
+
+        usdx = IUSDX(0xf8750b54d86BE7aE9e32b4A0C826811198D63313);
+        usdc = IERC20Faucet(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+        usdt = IERC20Faucet(0xdAC17F958D2ee523a2206206994597C13D831ec7);
+        dai = IERC20Faucet(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+    }
+
+    function _distributeMainnetTokens(address _user) internal {
+        deal(address(usdc), _user, 1e18);
+        deal(address(usdt), _user, 1e18);
+        deal(address(dai), _user, 1e18);
+
+        /*
+        vm.deal(faucetOwner, 10_000 ether);
+        uint256 amount0 = stETH.submit{value: 10_000 ether}(address(69));
+        stETH.approve(address(wstETH), amount0);
+        uint256 amount1 = wstETH.wrap(amount0);
+        wstETH.transfer(_user, amount1);
+        */
+    }
+
     /// @dev import these from env
     function _forkL1Sepolia() internal {
         string memory rpcURL = vm.envString("L1_TESTNET_RPC_URL");
@@ -71,11 +100,11 @@ contract TestSetup is Test {
         dai = IERC20Faucet(0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357);
         stETH = IStETH(0x3e3FE7dBc6B4C189E7128855dD526361c49b40Af);
         wstETH = IWstETH(0xB82381A3fBD3FaFA77B3a7bE693342618240067b);
-        _distributeTokens(alice);
-        _distributeTokens(bob);
+        _distributeSepoliaTokens(alice);
+        _distributeSepoliaTokens(bob);
     }
 
-    function _distributeTokens(address _user) internal prank(faucetOwner) {
+    function _distributeSepoliaTokens(address _user) internal prank(faucetOwner) {
         usdc.mint(_user, 1e18);
         usdt.mint(_user, 1e18);
         dai.mint(_user, 1e30);

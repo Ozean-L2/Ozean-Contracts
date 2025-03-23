@@ -6,8 +6,8 @@ import {TestERC20Decimals, TestERC20DecimalsFeeOnTransfer} from "test/utils/Mock
 import {AddressAliasHelper} from "optimism/src/vendor/AddressAliasHelper.sol";
 import {USDXBridgeDeploy, USDXBridge} from "script/L1/USDXBridgeDeploy.s.sol";
 
-/// @dev forge test --match-contract USDXBridgeForkSepoliaTest
-contract USDXBridgeForkSepoliaTest is TestSetup {
+/// @dev forge test --match-contract USDXBridgeForkMainetTest
+contract USDXBridgeForkMainetTest is TestSetup {
     /// USDXBridge
     event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _to);
     event WithdrawCoins(address indexed _coin, uint256 _amount, address indexed _to);
@@ -19,7 +19,7 @@ contract USDXBridgeForkSepoliaTest is TestSetup {
 
     function setUp() public override {
         super.setUp();
-        _forkL1Sepolia();
+        _forkL1Mainnet();
 
         /// Deploy USDXBridge
         USDXBridgeDeploy deployScript = new USDXBridgeDeploy();
@@ -28,7 +28,24 @@ contract USDXBridgeForkSepoliaTest is TestSetup {
     }
 
     /// SETUP ///
+
+    function testInitialize() public view {
+        assertEq(usdxBridge.owner(), hexTrust);
+        //assertEq(address(usdxBridge.usdx()), address(usdx));
+        assertEq(usdxBridge.gasLimit(), 21000);
+        assertEq(usdxBridge.allowlisted(address(usdc)), true);
+        assertEq(usdxBridge.allowlisted(address(usdt)), true);
+        assertEq(usdxBridge.allowlisted(address(dai)), true);
+        assertEq(usdxBridge.depositCap(address(usdc)), 1e30);
+        assertEq(usdxBridge.depositCap(address(usdt)), 1e30);
+        assertEq(usdxBridge.depositCap(address(dai)), 1e30);
+        assertEq(usdxBridge.totalBridged(address(usdc)), 0);
+        assertEq(usdxBridge.totalBridged(address(usdt)), 0);
+        assertEq(usdxBridge.totalBridged(address(dai)), 0);
+    }
+
     /*
+
     function testDeployRevertConditions() public {
         /// Unequal array length
         address[] memory stablecoins = new address[](3);
@@ -52,31 +69,6 @@ contract USDXBridgeForkSepoliaTest is TestSetup {
         depositCaps[2] = 1e30;
         vm.expectRevert("USDX Bridge: Zero address.");
         usdxBridge = new USDXBridge(hexTrust, optimismPortal, systemConfig, stablecoins, depositCaps);
-    }
-
-    
-    function testInitialize() public view {
-        /// Environment
-        (address addr, uint8 decimals) = systemConfig.gasPayingToken();
-        assertEq(addr, address(usdx));
-        assertEq(decimals, 18);
-
-        /// Bridge
-        assertEq(usdxBridge.owner(), hexTrust);
-        assertEq(address(usdxBridge.usdx()), address(usdx));
-        assertEq(address(usdxBridge.portal()), address(optimismPortal));
-        assertEq(address(usdxBridge.config()), address(systemConfig));
-        assertEq(usdxBridge.gasLimit(), 21000);
-        assertEq(usdx.allowance(address(usdxBridge), address(optimismPortal)), 0);
-        assertEq(usdxBridge.allowlisted(address(usdc)), true);
-        assertEq(usdxBridge.allowlisted(address(usdt)), true);
-        assertEq(usdxBridge.allowlisted(address(dai)), true);
-        assertEq(usdxBridge.depositCap(address(usdc)), 1e30);
-        assertEq(usdxBridge.depositCap(address(usdt)), 1e30);
-        assertEq(usdxBridge.depositCap(address(dai)), 1e30);
-        assertEq(usdxBridge.totalBridged(address(usdc)), 0);
-        assertEq(usdxBridge.totalBridged(address(usdt)), 0);
-        assertEq(usdxBridge.totalBridged(address(dai)), 0);
     }
 
     /// @dev Deposit USDX directly via portal, bypassing usdx bridge
