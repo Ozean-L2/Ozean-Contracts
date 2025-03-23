@@ -3,7 +3,6 @@ pragma solidity 0.8.28;
 
 import {TestSetup} from "test/utils/TestSetup.sol";
 import {TestERC20Decimals, TestERC20DecimalsFeeOnTransfer} from "test/utils/Mocks.sol";
-import {AddressAliasHelper} from "optimism/src/vendor/AddressAliasHelper.sol";
 import {USDXBridgeDeploy, USDXBridge} from "script/L1/USDXBridgeDeploy.s.sol";
 
 /// @dev forge test --match-contract USDXBridgeForkMainetTest
@@ -14,8 +13,6 @@ contract USDXBridgeForkMainetTest is TestSetup {
     event AllowlistSet(address indexed _coin, bool _set);
     event DepositCapSet(address indexed _coin, uint256 _newDepositCap);
     event GasLimitSet(uint64 _newGasLimit);
-    /// Optimism
-    event TransactionDeposited(address indexed from, address indexed to, uint256 indexed version, bytes opaqueData);
 
     function setUp() public override {
         super.setUp();
@@ -25,13 +22,17 @@ contract USDXBridgeForkMainetTest is TestSetup {
         USDXBridgeDeploy deployScript = new USDXBridgeDeploy();
         deployScript.run();
         usdxBridge = deployScript.usdxBridge();
+
+        /// Hex Trust grants bridge ability to mint USDX
+        vm.prank(0xb8Ce31ad8bAD26e88Db17e68F695C64f67AD31EB);
+        usdx.grantRole(0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6, address(usdxBridge));
     }
 
     /// SETUP ///
 
     function testInitialize() public view {
         assertEq(usdxBridge.owner(), hexTrust);
-        //assertEq(address(usdxBridge.usdx()), address(usdx));
+        assertEq(address(usdxBridge.l1USDX()), address(usdx));
         assertEq(usdxBridge.gasLimit(), 21000);
         assertEq(usdxBridge.allowlisted(address(usdc)), true);
         assertEq(usdxBridge.allowlisted(address(usdt)), true);
@@ -44,8 +45,6 @@ contract USDXBridgeForkMainetTest is TestSetup {
         assertEq(usdxBridge.totalBridged(address(dai)), 0);
     }
 
-    /*
-
     function testDeployRevertConditions() public {
         /// Unequal array length
         address[] memory stablecoins = new address[](3);
@@ -56,7 +55,7 @@ contract USDXBridgeForkMainetTest is TestSetup {
         depositCaps[0] = 1e30;
         depositCaps[1] = 1e30;
         vm.expectRevert("USDX Bridge: Stablecoins array length must equal the Deposit Caps array length.");
-        usdxBridge = new USDXBridge(hexTrust, optimismPortal, systemConfig, stablecoins, depositCaps);
+        usdxBridge = new USDXBridge(hexTrust, address(usdx), eid, stablecoins, depositCaps);
 
         /// Zero address
         stablecoins = new address[](3);
@@ -68,32 +67,7 @@ contract USDXBridgeForkMainetTest is TestSetup {
         depositCaps[1] = 1e30;
         depositCaps[2] = 1e30;
         vm.expectRevert("USDX Bridge: Zero address.");
-        usdxBridge = new USDXBridge(hexTrust, optimismPortal, systemConfig, stablecoins, depositCaps);
-    }
-
-    /// @dev Deposit USDX directly via portal, bypassing usdx bridge
-    function testNativeGasDeposit() public prank(alice) {
-        /// Mint and approve
-        uint256 _amount = 100e18;
-        usdx.mint(alice, _amount);
-        usdx.approve(address(optimismPortal), _amount);
-        uint256 balanceBefore = usdx.balanceOf(address(optimismPortal));
-
-        /// Bridge directly
-        vm.expectEmit(true, true, true, true);
-        emit TransactionDeposited(
-            AddressAliasHelper.applyL1ToL2Alias(alice), alice, 0, _getOpaqueData(_amount, _amount, 21000, false, "")
-        );
-        optimismPortal.depositERC20Transaction({
-            _to: alice,
-            _mint: _amount,
-            _value: _amount,
-            _gasLimit: 21000,
-            _isCreation: false,
-            _data: ""
-        });
-
-        assertEq(usdx.balanceOf(address(optimismPortal)), _amount + balanceBefore);
+        usdxBridge = new USDXBridge(hexTrust, address(usdx), eid, stablecoins, depositCaps);
     }
 
     /// BRIDGE STABLECOINS ///
@@ -134,70 +108,40 @@ contract USDXBridgeForkMainetTest is TestSetup {
         uint256 _amount = 100e6;
         usdc.approve(address(usdxBridge), _amount);
         uint256 usdxAmount = _amount * (10 ** 12);
-        uint256 balanceBefore = usdx.balanceOf(address(optimismPortal));
 
         /// Bridge
         vm.expectEmit(true, true, true, true);
-        emit TransactionDeposited(
-            AddressAliasHelper.applyL1ToL2Alias(address(usdxBridge)),
-            alice,
-            0,
-            _getOpaqueData(usdxAmount, usdxAmount, 21000, false, "")
-        );
-        vm.expectEmit(true, true, true, true);
         emit BridgeDeposit(address(usdc), _amount, alice);
-        usdxBridge.bridge(address(usdc), _amount, alice);
+        usdxBridge.bridge{value: 0.01 ether}(address(usdc), _amount, alice);
 
-        assertEq(usdx.balanceOf(address(optimismPortal)), balanceBefore + usdxAmount);
         assertEq(usdxBridge.totalBridged(address(usdc)), usdxAmount);
-        assertEq(usdx.allowance(address(usdxBridge), address(optimismPortal)), 0);
     }
 
     function testBridgeUSDXWithUSDT() public prank(alice) {
         /// Mint and approve
         uint256 _amount = 100e6;
-        usdt.approve(address(usdxBridge), _amount);
+        IERC20Alt(address(usdt)).approve(address(usdxBridge), _amount);
         uint256 usdxAmount = _amount * (10 ** 12);
-        uint256 balanceBefore = usdx.balanceOf(address(optimismPortal));
 
         /// Bridge
         vm.expectEmit(true, true, true, true);
-        emit TransactionDeposited(
-            AddressAliasHelper.applyL1ToL2Alias(address(usdxBridge)),
-            alice,
-            0,
-            _getOpaqueData(usdxAmount, usdxAmount, 21000, false, "")
-        );
-        vm.expectEmit(true, true, true, true);
         emit BridgeDeposit(address(usdt), _amount, alice);
-        usdxBridge.bridge(address(usdt), _amount, alice);
+        usdxBridge.bridge{value: 0.01 ether}(address(usdt), _amount, alice);
 
-        assertEq(usdx.balanceOf(address(optimismPortal)), balanceBefore + usdxAmount);
         assertEq(usdxBridge.totalBridged(address(usdt)), usdxAmount);
-        assertEq(usdx.allowance(address(usdxBridge), address(optimismPortal)), 0);
     }
 
     function testBridgeUSDXWithDAI() public prank(alice) {
         /// Mint and approve
         uint256 _amount = 100e18;
         dai.approve(address(usdxBridge), _amount);
-        uint256 balanceBefore = usdx.balanceOf(address(optimismPortal));
 
         /// Bridge
         vm.expectEmit(true, true, true, true);
-        emit TransactionDeposited(
-            AddressAliasHelper.applyL1ToL2Alias(address(usdxBridge)),
-            alice,
-            0,
-            _getOpaqueData(_amount, _amount, 21000, false, "")
-        );
-        vm.expectEmit(true, true, true, true);
         emit BridgeDeposit(address(dai), _amount, alice);
-        usdxBridge.bridge(address(dai), _amount, alice);
+        usdxBridge.bridge{value: 0.01 ether}(address(dai), _amount, alice);
 
-        assertEq(usdx.balanceOf(address(optimismPortal)), balanceBefore + _amount);
         assertEq(usdxBridge.totalBridged(address(dai)), _amount);
-        assertEq(usdx.allowance(address(usdxBridge), address(optimismPortal)), 0);
     }
 
     /// OWNER ///
@@ -247,7 +191,7 @@ contract USDXBridgeForkMainetTest is TestSetup {
         assertEq(usdxBridge.depositCap(address(usdc)), _newCap);
     }
 
-    function testSetGasLimit(uint64 _newGasLimit) public {
+    function testSetGasLimit(uint32 _newGasLimit) public {
         /// Non-owner revert
         vm.expectRevert("Ownable: caller is not the owner");
         usdxBridge.setGasLimit(_newGasLimit);
@@ -266,10 +210,10 @@ contract USDXBridgeForkMainetTest is TestSetup {
         assertEq(usdxBridge.gasLimit(), _newGasLimit);
     }
 
-    function testWithdrawERC20() public prank(faucetOwner) {
+    function testWithdrawERC20() public prank(alice) {
         /// Send some tokens directly to the contract
         uint256 _amount = 100e18;
-        dai.mint(address(usdxBridge), _amount);
+        dai.transfer(address(usdxBridge), _amount);
         uint256 balanceBefore = dai.balanceOf(address(usdxBridge));
 
         /// Non-owner revert
@@ -292,21 +236,9 @@ contract USDXBridgeForkMainetTest is TestSetup {
         /// Alice mints and approves
         uint256 _amount = 100e6;
         usdc.approve(address(usdxBridge), _amount);
-        uint256 usdxAmount = _amount * (10 ** 12);
-        uint256 usdxBalanceBefore = usdx.balanceOf(address(optimismPortal));
-        uint256 usdcBalanceBefore = usdc.balanceOf(address(usdxBridge));
 
         /// Alice bridges
-        vm.expectEmit(true, true, true, true);
-        emit TransactionDeposited(
-            AddressAliasHelper.applyL1ToL2Alias(address(usdxBridge)),
-            alice,
-            0,
-            _getOpaqueData(usdxAmount, usdxAmount, 21000, false, "")
-        );
-        usdxBridge.bridge(address(usdc), _amount, alice);
-
-        assertEq(usdx.balanceOf(address(optimismPortal)), usdxBalanceBefore + usdxAmount);
+        usdxBridge.bridge{value: 0.01 ether}(address(usdc), _amount, alice);
 
         /// Owner withdraws deposited USDC
         vm.stopPrank();
@@ -316,18 +248,10 @@ contract USDXBridgeForkMainetTest is TestSetup {
         emit WithdrawCoins(address(usdc), _amount, hexTrust);
         usdxBridge.withdrawERC20(address(usdc), _amount);
 
-        assertEq(usdc.balanceOf(address(usdxBridge)), usdcBalanceBefore);
         assertEq(usdc.balanceOf(hexTrust), _amount);
     }
+}
 
-    /// HELPERS ///
-
-    function _getOpaqueData(uint256 _mint, uint256 _value, uint64 _gasLimit, bool _isCreation, bytes memory _data)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        return abi.encodePacked(_mint, _value, _gasLimit, _isCreation, _data);
-    }
-    */
+interface IERC20Alt {
+    function approve(address _spender, uint _value) external;
 }
