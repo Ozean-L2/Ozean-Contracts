@@ -19,13 +19,15 @@ import {OptionsBuilder} from "@layerzero/oapp/contracts/oapp/libs/OptionsBuilder
 ///         the L2 via the Optimism Portal contract. The owner of this contract can modify the set of
 ///         allow-listed stablecoins accepted, along with the deposit caps, and can also withdraw any deposited
 ///         ERC20 tokens.
-/// @dev    Needs an audit and new natspec
+/// @dev    Needs an audit
 contract USDXBridge is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20Decimals;
     using OptionsBuilder for bytes;
 
+    /// @notice The address of the USDX contract on mainnet.
     IUSDX public immutable l1USDX;
 
+    /// @notice The EID of the Ozean L2.
     uint32 public immutable eid;
 
     /// @notice Addresses of allow-listed stablecoins.
@@ -39,9 +41,6 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     /// @notice The total amount of USDX bridged via this contract per deposted stablecoin.
     /// @dev    stablecoin => amount
     mapping(address => uint256) public totalBridged;
-
-    /// @notice The gas limit passed to the Optimism portal when depositing USDX.
-    uint32 public gasLimit;
 
     /// EVENTS ///
 
@@ -57,9 +56,6 @@ contract USDXBridge is Ownable, ReentrancyGuard {
 
     /// @notice An event emitted when the deposit cap for an ERC20 stablecoin is modified.
     event DepositCapSet(address indexed _coin, uint256 _newDepositCap);
-
-    /// @notice An event emitted when the gas limit is updated.
-    event GasLimitSet(uint64 _newGasLimit);
 
     /// SETUP ///
 
@@ -82,7 +78,6 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         _transferOwnership(_owner);
         l1USDX = IUSDX(_l1USDX);
         eid = _eid;
-        gasLimit = 21000;
         uint256 length = _stablecoins.length;
         require(
             length == _depositCaps.length,
@@ -157,13 +152,6 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         emit DepositCapSet(_stablecoin, _newDepositCap);
     }
 
-    /// @notice This function allows the owner to modify the gas limit for USDX deposits.
-    /// @param  _newGasLimit The new gas limit to be set for transactions.
-    function setGasLimit(uint32 _newGasLimit) external onlyOwner {
-        gasLimit = _newGasLimit;
-        emit GasLimitSet(_newGasLimit);
-    }
-
     /// @notice This function allows the owner to withdraw any ERC20 token held by this contract.
     /// @param  _coin The address of the ERC20 token to withdraw.
     /// @param  _amount The amount of tokens to withdraw.
@@ -185,6 +173,10 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         return (_amount * 10 ** usdxDecimals) / (10 ** depositDecimals);
     }
 
+    /// @notice Converts an Ethereum address to a bytes32 representation.
+    /// @param  _addr The Ethereum address to convert.
+    /// @return bytes32 The bytes32 representation of the address.
+    /// @dev    This function truncates the address to its lower 20 bytes and right-aligns it within the bytes32.
     function addressToBytes32(address _addr) public pure returns (bytes32) {
         return bytes32(uint256(uint160(_addr)));
     }

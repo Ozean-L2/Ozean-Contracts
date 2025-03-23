@@ -47,7 +47,6 @@ contract USDXBridgeDeploy is ScriptUtils {
         require(usdxBridge.owner() == hexTrust, "Script: Wrong owner.");
         require(address(usdxBridge.l1USDX()) == l1USDX, "Script: Wrong address.");
         require(usdxBridge.eid() == eid, "Script: Wrong value.");
-        require(usdxBridge.gasLimit() == 21000, "Script: Wrong value.");
         for (uint256 i; i < length; i++) {
             require(usdxBridge.depositCap(stablecoins[i]) == depositCaps[i], "Script: Incorrect deposit cap.");
         }

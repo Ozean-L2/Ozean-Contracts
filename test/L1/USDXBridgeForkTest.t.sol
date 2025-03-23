@@ -12,7 +12,6 @@ contract USDXBridgeForkMainetTest is TestSetup {
     event WithdrawCoins(address indexed _coin, uint256 _amount, address indexed _to);
     event AllowlistSet(address indexed _coin, bool _set);
     event DepositCapSet(address indexed _coin, uint256 _newDepositCap);
-    event GasLimitSet(uint64 _newGasLimit);
 
     function setUp() public override {
         super.setUp();
@@ -33,7 +32,6 @@ contract USDXBridgeForkMainetTest is TestSetup {
     function testInitialize() public view {
         assertEq(usdxBridge.owner(), hexTrust);
         assertEq(address(usdxBridge.l1USDX()), address(usdx));
-        assertEq(usdxBridge.gasLimit(), 21000);
         assertEq(usdxBridge.allowlisted(address(usdc)), true);
         assertEq(usdxBridge.allowlisted(address(usdt)), true);
         assertEq(usdxBridge.allowlisted(address(dai)), true);
@@ -189,25 +187,6 @@ contract USDXBridgeForkMainetTest is TestSetup {
         vm.stopPrank();
 
         assertEq(usdxBridge.depositCap(address(usdc)), _newCap);
-    }
-
-    function testSetGasLimit(uint32 _newGasLimit) public {
-        /// Non-owner revert
-        vm.expectRevert("Ownable: caller is not the owner");
-        usdxBridge.setGasLimit(_newGasLimit);
-
-        assertEq(usdxBridge.gasLimit(), 21000);
-
-        /// Owner allowed
-        vm.startPrank(hexTrust);
-
-        vm.expectEmit(true, true, true, true);
-        emit GasLimitSet(_newGasLimit);
-        usdxBridge.setGasLimit(_newGasLimit);
-
-        vm.stopPrank();
-
-        assertEq(usdxBridge.gasLimit(), _newGasLimit);
     }
 
     function testWithdrawERC20() public prank(alice) {
