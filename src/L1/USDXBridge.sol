@@ -12,7 +12,7 @@ import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.s
 ///         the L2 via the Optimism Portal contract. The owner of this contract can modify the set of
 ///         allow-listed stablecoins accepted, along with the deposit caps, and can also withdraw any deposited
 ///         ERC20 tokens.
-/// @dev    Needs an audit
+/// @dev    Needs an audit and new natspec
 contract USDXBridge is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20Decimals;
 
@@ -120,6 +120,7 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         /// Mint USDX
         l1USDX.mint(address(this), bridgeAmount);
         /// Bridge USDX
+        /// @dev replace with LZ send
         l1USDX.approve(address(standardBridge), bridgeAmount);
         standardBridge.depositERC20To(address(l1USDX), l2USDX, _to, bridgeAmount, gasLimit, "");
         /// @dev some check to ensure tokens are sent in case of soft-revert at the bridge

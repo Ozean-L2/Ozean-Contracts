@@ -72,7 +72,7 @@ contract OzUSD is IERC20, ReentrancyGuard, Pausable, Ownable {
     constructor(address _owner, address _usdx, uint256 _sharesAmount) {
         _transferOwnership(_owner);
         usdx = IERC20(_usdx);
-        /// @dev need to approve to future address here
+        require(_sharesAmount >= 1e18, "OzUSD: Must deploy with at least one USDX.");
         usdx.transferFrom(msg.sender, address(this), _sharesAmount);
         _mintShares(address(0xdead), _sharesAmount);
         _emitTransferAfterMintingShares(address(0xdead), _sharesAmount);

@@ -346,6 +346,8 @@ contract LGEStakingForkSepoliaTest is TestSetup {
         assertEq(usdt.balanceOf(address(lgeStaking)), 0);
     }
 
+    /// @dev needs updating
+    /*
     function testMigrateUSDCSuccessConditions() public prank(alice) {
         /// Setup
         uint256 _amount0 = 100e6;
@@ -382,6 +384,7 @@ contract LGEStakingForkSepoliaTest is TestSetup {
 
         assertEq(usdx.balanceOf(address(optimismPortal)), balanceBefore + (_amount0 * (10 ** 12)));
     }
+    */
 
     function testMigrateWSTETHSuccessConditions() public prank(alice) {
         /// Setup

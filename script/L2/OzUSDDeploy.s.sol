@@ -27,7 +27,8 @@ contract OzUSDDeploy is ScriptUtils {
         require(l2USDX != address(0), "Script: Zero address.");
         require(initialSharesAmount == 1e18, "Script: Zero amount.");
         /// Approve
-        address predictedAddress = _addressFrom(hexTrust, 12);
+        /// @dev Need to approve USDX to be deposited to the yet to-be-deployed ozUSD contract
+        address predictedAddress = vm.computeCreateAddress(hexTrust, vm.getNonce(hexTrust) + 1);
         IERC20(l2USDX).approve(predictedAddress, 1e18);
         /// Deploy
         bytes memory deployData = abi.encode(hexTrust, l2USDX, initialSharesAmount);

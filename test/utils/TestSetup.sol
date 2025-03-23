@@ -3,8 +3,6 @@ pragma solidity 0.8.15;
 
 import {Test} from "forge-std/Test.sol";
 import {console2 as console} from "forge-std/console2.sol";
-import {OptimismPortal} from "optimism/src/L1/OptimismPortal.sol";
-import {SystemConfig} from "optimism/src/L1/SystemConfig.sol";
 import {L1StandardBridge} from "optimism/src/L1/L1StandardBridge.sol";
 import {IUSDX, IERC20Faucet, IERC20} from "test/utils/TestInterfaces.sol";
 import {IStETH, IWstETH} from "test/utils/TestInterfaces.sol";
@@ -17,8 +15,6 @@ import {WozUSD} from "src/L2/WozUSD.sol";
 contract TestSetup is Test {
     /// L1
     address public constant faucetOwner = 0xC959483DBa39aa9E78757139af0e9a2EDEb3f42D;
-    OptimismPortal public optimismPortal;
-    SystemConfig public systemConfig;
     L1StandardBridge public l1StandardBridge;
     IL1LidoTokensBridge public l1LidoTokensBridge;
     IERC20Faucet public usdc;
@@ -34,6 +30,7 @@ contract TestSetup is Test {
 
     /// L2
 
+    IERC20 public l2USDX;
     OzUSD public ozUSD;
     WozUSD public wozUSD;
 
@@ -56,6 +53,7 @@ contract TestSetup is Test {
 
     /// FORK L1 ///
 
+    /// @dev import these from env
     function _forkL1Sepolia() internal {
         string memory rpcURL = vm.envString("L1_TESTNET_RPC_URL");
         uint256 l1Fork = vm.createFork(rpcURL);
@@ -64,8 +62,7 @@ contract TestSetup is Test {
         vm.deal(hexTrust, 10_000 ether);
         vm.deal(alice, 10_000 ether);
         vm.deal(bob, 10_000 ether);
-        optimismPortal = OptimismPortal(payable(0x6EeeA09335D09870dD467FD34ECc10Fdb5106527));
-        systemConfig = SystemConfig(0xdEC733B0643E7c3Bd06576A4C70Ca87E301EAe87);
+
         l1StandardBridge = L1StandardBridge(payable(0xb9558CE3C11EC69e18632A8e5B316581e852dB91));
         l1LidoTokensBridge = IL1LidoTokensBridge(0xd836932faEaC34FdFF0bb14696E92bA33805D4E3);
         usdx = IUSDX(0x43bd82D1e29a1bEC03AfD11D5a3252779b8c760c);
@@ -99,5 +96,9 @@ contract TestSetup is Test {
         vm.deal(hexTrust, 10_000 ether);
         vm.deal(alice, 10_000 ether);
         vm.deal(bob, 10_000 ether);
+        l2USDX = IERC20(vm.envAddress("L2_SEPOLIA_USDX"));
+        deal(address(l2USDX), hexTrust, 10_000 ether);
+        deal(address(l2USDX), alice, 10_000 ether);
+        deal(address(l2USDX), bob, 10_000 ether);
     }
 }
