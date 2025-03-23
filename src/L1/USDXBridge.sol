@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.15;
+pragma solidity 0.8.28;
 
 import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {SendParam, OFTReceipt} from "@layerzero/oapp/contracts/oft/interfaces/IOFT.sol";
+import {MessagingFee} from "@layerzero/oapp/contracts/oapp/OApp.sol";
+import {OptionsBuilder} from "@layerzero/oapp/contracts/oapp/libs/OptionsBuilder.sol";
 
 /// @title  USDX Bridge
 /// @notice This contract provides bridging functionality for allow-listed stablecoins to the Ozean Layer L2.
@@ -15,6 +18,7 @@ import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.s
 /// @dev    Needs an audit and new natspec
 contract USDXBridge is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20Decimals;
+    using OptionsBuilder for bytes;
 
     IUSDX public immutable l1USDX;
 
@@ -215,5 +219,5 @@ interface IUSDX is IERC20Decimals {
     function quoteSend(
         SendParam calldata _sendParam,
         bool _payInLzToken
-    ) external view virtual returns (MessagingFee memory msgFee)
+    ) external view virtual returns (MessagingFee memory msgFee);
 }

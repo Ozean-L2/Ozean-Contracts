@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.15;
+pragma solidity 0.8.28;
 
 import {TestSetup, IUSDX} from "test/utils/TestSetup.sol";
 import {OzUSDDeploy, OzUSD} from "script/L2/OzUSDDeploy.s.sol";

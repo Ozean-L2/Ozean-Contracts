@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.15;
+pragma solidity 0.8.28;
 
 import {ScriptUtils, console} from "script/utils/ScriptUtils.sol";
 import {LGEStaking} from "src/L1/LGEStaking.sol";
