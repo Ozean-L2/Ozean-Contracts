@@ -86,6 +86,11 @@ contract USDXBridgeForkMainetTest is TestSetup {
         vm.expectRevert("USDX Bridge: Bridge amount exceeds deposit cap.");
         usdxBridge.bridge(address(dai), excess, alice);
 
+        /// Insufficient LZ fee passed
+        usdc.approve(address(usdxBridge), 100e6);
+        vm.expectRevert("USDX Bridge: Layer Zero fee.");
+        usdxBridge.bridge{value: 0}(address(usdc), 100e6, alice);
+
         vm.stopPrank();
         vm.startPrank(hexTrust);
 
