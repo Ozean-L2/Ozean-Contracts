@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {console2 as console} from "forge-std/console2.sol";
-
 import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -102,9 +100,7 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         /// Checks
         require(allowlisted[_stablecoin], "USDX Bridge: Stablecoin not accepted.");
         require(_amount > 0, "USDX Bridge: May not bridge nothing.");
-        console.log("JO");
         uint256 bridgeAmount = _getBridgeAmount(_stablecoin, _amount);
-        console.log("JAJ");
         require(
             totalBridged[_stablecoin] + bridgeAmount <= depositCap[_stablecoin],
             "USDX Bridge: Bridge amount exceeds deposit cap."
@@ -119,14 +115,16 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         totalBridged[_stablecoin] += bridgeAmount;
         /// Mint USDX
         l1USDX.mint(address(this), bridgeAmount);
-        /// Bridge USDX
+        /// Bridge USDX via LZ
         bytes memory extraOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(65000, 0);
         SendParam memory sendParam =
             SendParam(eid, addressToBytes32(_to), bridgeAmount, bridgeAmount * 99 / 100, extraOptions, "", "");
         MessagingFee memory fee = l1USDX.quoteSend(sendParam, false);
         //// @dev handle return values also, emit them?
-        require(msg.value > fee.nativeFee, "USDX Bridge: Layer Zero fee");
-        l1USDX.send{value: fee.nativeFee}(sendParam, fee, msg.sender);
+        require(msg.value > fee.nativeFee, "USDX Bridge: Layer Zero fee.");
+        (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt) = l1USDX.send{value: fee.nativeFee}(sendParam, fee, msg.sender);
+        /// @dev need to check these return values?
+        /// Refund excess eth
         (bool s,) = address(msg.sender).call{value: msg.value - fee.nativeFee}('');
         require(s);
         /// @dev some check to ensure tokens are sent in case of soft-revert at the bridge
@@ -177,7 +175,7 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     /// @param  _addr The Ethereum address to convert.
     /// @return bytes32 The bytes32 representation of the address.
     /// @dev    This function truncates the address to its lower 20 bytes and right-aligns it within the bytes32.
-    function addressToBytes32(address _addr) public pure returns (bytes32) {
+    function addressToBytes32(address _addr) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(_addr)));
     }
 }
