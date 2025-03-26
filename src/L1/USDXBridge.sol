@@ -118,7 +118,7 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         /// Bridge USDX via LZ
         bytes memory extraOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(65000, 0);
         SendParam memory sendParam =
-            SendParam(eid, addressToBytes32(_to), bridgeAmount, bridgeAmount * 99 / 100, extraOptions, "", "");
+            SendParam(eid, addressToBytes32(_to), bridgeAmount, bridgeAmount, extraOptions, "", "");
         MessagingFee memory fee = l1USDX.quoteSend(sendParam, false);
         //// @dev handle return values also, emit them?
         require(msg.value > fee.nativeFee, "USDX Bridge: Layer Zero fee.");
