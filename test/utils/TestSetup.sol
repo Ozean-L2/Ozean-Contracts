@@ -9,6 +9,7 @@ import {USDXBridge} from "src/L1/USDXBridge.sol";
 import {LGEStaking} from "src/L1/LGEStaking.sol";
 import {LGEMigrationV1, IL1LidoTokensBridge, IL1StandardBridge} from "src/L1/LGEMigrationV1.sol";
 import {OzUSD} from "src/L2/OzUSD.sol";
+import {OzUSDV2} from "src/L2/OzUSDV2.sol";
 import {WozUSD} from "src/L2/WozUSD.sol";
 
 contract TestSetup is Test {
@@ -33,6 +34,7 @@ contract TestSetup is Test {
     IERC20 public l2USDX;
     OzUSD public ozUSD;
     WozUSD public wozUSD;
+    OzUSDV2 public ozUSDV2;
 
     /// Universal
     address public hexTrust;
