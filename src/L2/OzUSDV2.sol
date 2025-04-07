@@ -8,9 +8,14 @@ import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
 
 /// @title  Ozean USD (ozUSD) Token Contract
 /// @notice This contract represents a yield-bearing vault for USDX tokens, adhering to the ERC-4626 standard.
-/// @dev    NEEDS AN AUDIT
+/// @dev    !!! NEEDS AN AUDIT !!!
+///         Overrides _deposit() and _withdraw() flow to allow only the owner to distribute yield.
+///         https://docs.euler.finance/creator-tools/security/attack-vectors/donation-attacks/
 contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
     using SafeERC20 for IERC20Metadata;
+
+    /// @notice The total number of USDX held by this contract that has been deposited legitmately.
+    uint256 public totalDeposited;
 
     /// @notice An event for distribution of yield (in the form of USDX) to all participants.
     /// @param  _previousTotalBalance The total amount of USDX held by the contract before rebasing.
@@ -18,11 +23,11 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
     event YieldDistributed(uint256 _previousTotalBalance, uint256 _newTotalBalance);
 
     /// @notice Constructor to initialize the ozUSD vault.
-    /// @param  _USDX The address of the USDX token (the underlying asset).
+    /// @param  _usdx The address of the USDX token (the underlying asset).
     /// @param  _owner The address of the contract owner.
     /// @param  _sharesAmount The initial amount of ozUSD shares to mint.
-    constructor(IERC20Metadata _USDX, address _owner, uint256 _sharesAmount)
-        ERC4626(_USDX)
+    constructor(IERC20Metadata _usdx, address _owner, uint256 _sharesAmount)
+        ERC4626(_usdx)
         ERC20("Ozean USD", "ozUSD")
     {
         _transferOwnership(_owner);
@@ -54,11 +59,41 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
         assets = super.mint(shares, receiver);
     }
 
+    /// @dev See {IERC4262-totalAssets}.
+    function totalAssets() public view override returns (uint256) {
+        return totalDeposited;
+    }
+
+    /// @dev See {IERC4262-_deposit}.
+    function _deposit(
+        address caller,
+        address receiver,
+        uint256 assets,
+        uint256 shares
+    ) internal override {
+        super._deposit(caller, receiver, assets, shares);
+        totalDeposited += assets;
+    }
+
+    /// @dev See {IERC4262-_withdraw}.
+    function _withdraw(
+        address caller,
+        address receiver,
+        address owner,
+        uint256 assets,
+        uint256 shares
+    ) internal override {
+        super._withdraw(caller, receiver, owner, assets, shares);
+        totalDeposited -= assets;
+    }
+
     /// OWNER ///
 
     /// @notice Distributes the yield to the protocol by updating the total pooled USDX balance.
+    /// @param _amount The amount of USDX to deposit and evenly distribute to ozUSD holders.
     function distributeYield(uint256 _amount) external nonReentrant onlyOwner {
         IERC20Metadata(asset()).safeTransferFrom(msg.sender, address(this), _amount);
+        totalDeposited += _amount;
         emit YieldDistributed(totalAssets() - _amount, totalAssets());
     }
 

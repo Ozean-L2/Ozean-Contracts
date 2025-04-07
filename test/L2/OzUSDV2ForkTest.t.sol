@@ -22,7 +22,8 @@ contract OzUSDV2ForkTest is TestSetup {
     function testInitialize() public view {
         assertEq(ozUSDV2.asset(), address(l2USDX));
         assertEq(l2USDX.balanceOf(address(ozUSDV2)), 1e18);
-        assertEq(ozUSDV2.owner(), hexTrust);
+        assertEq(l2USDX.balanceOf(address(ozUSDV2)), 1e18);
+        assertEq(ozUSDV2.totalAssets(), 1e18);
     }
 
     function testDeployRevertConditions() public {
@@ -140,6 +141,7 @@ contract OzUSDV2ForkTest is TestSetup {
 
         ozUSDV2.redeem(_amountA, alice, alice);
         assertEq(l2USDX.balanceOf(address(ozUSDV2)), (1e18 + _amountA + _amountB) - predictedAliceAmount);
+        assertEq(ozUSDV2.totalAssets(), (1e18 + _amountA + _amountB) - predictedAliceAmount);
     }
 
     /// ASSETS ///
@@ -251,5 +253,21 @@ contract OzUSDV2ForkTest is TestSetup {
 
         ozUSDV2.setPaused(false);
         assertEq(ozUSDV2.paused(), false);
+    }
+
+    /// OVERRIDES ///
+
+    function testDirectTransfer() public prank(alice) {
+        assertEq(ozUSDV2.totalAssets(), 1e18);
+        assertEq(ozUSDV2.convertToAssets(1e18), 1e18);
+        assertEq(l2USDX.balanceOf(address(ozUSDV2)), 1e18);
+
+        /// Sending USDX directly to the contract DOES NOT distributed yield or increase totalAssets
+        uint256 _amountA = 100 ether;
+        l2USDX.transfer(address(ozUSDV2), _amountA);
+
+        assertEq(ozUSDV2.totalAssets(), 1e18);
+        assertEq(ozUSDV2.convertToAssets(1e18), 1e18);
+        assertEq(l2USDX.balanceOf(address(ozUSDV2)), 1e18 + _amountA);
     }
 }

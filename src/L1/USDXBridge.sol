@@ -17,7 +17,7 @@ import {OptionsBuilder} from "@layerzero/oapp/contracts/oapp/libs/OptionsBuilder
 ///         the L2 via the Optimism Portal contract. The owner of this contract can modify the set of
 ///         allow-listed stablecoins accepted, along with the deposit caps, and can also withdraw any deposited
 ///         ERC20 tokens.
-/// @dev    Needs an audit
+/// @dev    !!! NEEDS AN AUDIT !!!
 contract USDXBridge is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20Decimals;
     using OptionsBuilder for bytes;

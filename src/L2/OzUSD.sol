@@ -11,11 +11,12 @@ import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
 ///         based on shares controlled by each account. The total pooled USDX (protocol-controlled USDX) determines the
 ///         total balances; meaning that any USDX sent to this contract automatically rebases all user balances.
 ///         1 USDX == 1 ozUSD.
-/// @dev    This contract does not fully comply with the ERC20 standard as rebasing events do not emit `Transfer`
+/// @dev    !!! NEEDS AN AUDIT !!!
+///         Also needs a natspec redo
+///         This contract does not fully comply with the ERC20 standard as rebasing events do not emit `Transfer`
 ///         events.
 ///         This contract is inspired by Lido's stETH contract:
 ///         https://vscode.blockscan.com/ethereum/0x17144556fd3424edc8fc8a4c940b2d04936d17eb
-///         NEEDS AN AUDIT and a natspec redo
 contract OzUSD is IERC20, ReentrancyGuard, Pausable, Ownable {
     /// @notice The USDX token contract on the Poseidon L2.
     IERC20 public immutable usdx;
