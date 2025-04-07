@@ -17,7 +17,7 @@ import {OptionsBuilder} from "@layerzero/oapp/contracts/oapp/libs/OptionsBuilder
 ///         the L2 via the Optimism Portal contract. The owner of this contract can modify the set of
 ///         allow-listed stablecoins accepted, along with the deposit caps, and can also withdraw any deposited
 ///         ERC20 tokens.
-/// @dev    Needs an audit
+/// @dev    !!! NEEDS AN AUDIT !!!
 contract USDXBridge is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20Decimals;
     using OptionsBuilder for bytes;
@@ -120,12 +120,14 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         SendParam memory sendParam =
             SendParam(eid, addressToBytes32(_to), bridgeAmount, bridgeAmount, extraOptions, "", "");
         MessagingFee memory fee = l1USDX.quoteSend(sendParam, false);
-        //// @dev handle return values also, emit them?
         require(msg.value > fee.nativeFee, "USDX Bridge: Layer Zero fee.");
-        (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt) = l1USDX.send{value: fee.nativeFee}(sendParam, fee, msg.sender);
-        /// @dev need to check these return values?
+        (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt) =
+            l1USDX.send{value: fee.nativeFee}(sendParam, fee, msg.sender);
+        /// @dev need to check/handle these return values?
+        msgReceipt;
+        oftReceipt;
         /// Refund excess eth
-        (bool s,) = address(msg.sender).call{value: msg.value - fee.nativeFee}('');
+        (bool s,) = address(msg.sender).call{value: msg.value - fee.nativeFee}("");
         require(s);
         /// @dev some check to ensure tokens are sent in case of soft-revert at the bridge
         emit BridgeDeposit(_stablecoin, _amount, _to);

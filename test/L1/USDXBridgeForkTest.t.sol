@@ -237,5 +237,5 @@ contract USDXBridgeForkMainetTest is TestSetup {
 }
 
 interface IERC20Alt {
-    function approve(address _spender, uint _value) external;
+    function approve(address _spender, uint256 _value) external;
 }
