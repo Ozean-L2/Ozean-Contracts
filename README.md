@@ -82,6 +82,7 @@ TBD
 
 | **Contract** | **Address** |
 |:---:|:---:|
+| **ozUSDV2** | [0x743af9531E0f9944E42C2a74D9C65514925d6830](https://poseidon-testnet.explorer.caldera.xyz/address/0x743af9531E0f9944E42C2a74D9C65514925d6830)|
 | **ozUSD Impl (DEPRECATED)** | [0x9e76FE3E3859A4BF1C30d2DAD7b3C35d8654Eb50](https://ozean-testnet.explorer.caldera.xyz/address/0x9e76FE3E3859A4BF1C30d2DAD7b3C35d8654Eb50)|
 | **ozUSD Proxy (DEPRECATED)** | [0x1Ce4888a6dED8d6aE5F5D9ca1CABc758c680950b](https://ozean-testnet.explorer.caldera.xyz/address/0x1Ce4888a6dED8d6aE5F5D9ca1CABc758c680950b)|
 | **wozUSD (DEPRECATED)**  | [0x2f6807b76c426527C3a5C442E8697f12C554195b](https://ozean-testnet.explorer.caldera.xyz/address/0x2f6807b76c426527C3a5C442E8697f12C554195b)|
