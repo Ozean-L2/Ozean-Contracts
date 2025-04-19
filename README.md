@@ -43,9 +43,12 @@ This is a [Foundry](https://book.getfoundry.sh/) repo for the set of custom Ozea
 
 #### Contracts:
 
+Note that the USDX Bridge Alt bridge does not have minting rights for usdx, and needs to be seeded with tokens for the bridge to work. Additionally, the bridge is configured for the [Flare Testnet](https://testnet.flarescan.com/).
+
 | **Contract** | **Address** |
 |:---:|:---:|
 | **USDX** | [0x43bd82D1e29a1bEC03AfD11D5a3252779b8c760c](https://sepolia.etherscan.io/token/0x43bd82d1e29a1bec03afd11d5a3252779b8c760c#code)|
+| **USDX Bridge Alt** | [0x14D72e0C6f6b1117CfBF6a66C79158c8d6a18bC7](https://eth-sepolia.blockscout.com/address/0x14D72e0C6f6b1117CfBF6a66C79158c8d6a18bC7)|
 | **USDX Bridge (DEPRECATED)** | [0x084C27a0bE5dF26ed47F00678027A6E76B14a0B4](https://sepolia.etherscan.io/address/0x084c27a0be5df26ed47f00678027a6e76b14a0b4#code)|
 | **LGE Staking** | [0xBAFAAfC8E2d8F6Ebf9Fa49646C36D640B4e07203](https://sepolia.etherscan.io/address/0xBAFAAfC8E2d8F6Ebf9Fa49646C36D640B4e07203#code)|
 

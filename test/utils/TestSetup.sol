@@ -6,6 +6,7 @@ import {console2 as console} from "forge-std/console2.sol";
 import {IUSDX, IERC20Faucet, IERC20} from "test/utils/TestInterfaces.sol";
 import {IStETH, IWstETH} from "test/utils/TestInterfaces.sol";
 import {USDXBridge} from "src/L1/USDXBridge.sol";
+import {USDXBridgeAlt} from "src/L1/USDXBridgeAlt.sol";
 import {LGEStaking} from "src/L1/LGEStaking.sol";
 import {LGEMigrationV1, IL1LidoTokensBridge, IL1StandardBridge} from "src/L1/LGEMigrationV1.sol";
 import {OzUSD} from "src/L2/OzUSD.sol";
@@ -25,6 +26,7 @@ contract TestSetup is Test {
 
     IUSDX public usdx;
     USDXBridge public usdxBridge;
+    USDXBridgeAlt public usdxBridgeAlt;
     LGEStaking public lgeStaking;
     LGEMigrationV1 public lgeMigration;
     uint32 public eid;
