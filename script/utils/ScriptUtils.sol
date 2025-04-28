@@ -1,11 +1,11 @@
 pragma solidity 0.8.28;
 
-import {console} from "forge-std/console.sol";
-import {Script} from "forge-std/Script.sol";
+import {Script, console} from "forge-std/Script.sol";
+import {Constants} from "script/Constants.sol";
 
-contract ScriptUtils is Script {
+contract ScriptUtils is Script, Constants {
     modifier broadcast() {
-        vm.startBroadcast(vm.envAddress("ADMIN"));
+        vm.startBroadcast(ADMIN);
         _;
         vm.stopBroadcast();
     }

@@ -1,24 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {TestSetup, USDXBridge, console} from "test/utils/TestSetup.sol";
+import {Pausable} from "openzeppelin/contracts/security/Pausable.sol";
+import {TestSetup, USDXBridge} from "test/utils/TestSetup.sol";
 import {TestERC20Decimals, TestERC20DecimalsFeeOnTransfer} from "test/utils/Mocks.sol";
 import {LGEStakingDeploy, LGEStaking} from "script/L1/LGEStakingDeploy.s.sol";
 import {LGEMigrationDeploy, LGEMigrationV1} from "script/L1/LGEMigrationDeploy.s.sol";
 
 /// @dev forge test --match-contract LGEStakingForkSepoliaTest
 contract LGEStakingForkSepoliaTest is TestSetup {
-    /// LGEStaking events
-    event Deposit(address indexed _token, uint256 _amount, address indexed _to);
-    event Withdraw(address indexed _token, uint256 _amount, address indexed _to);
-    event AllowlistSet(address indexed _coin, bool _set);
-    event DepositCapSet(address indexed _coin, uint256 _newDepositCap);
-    event TokensMigrated(address indexed _user, address indexed _l2Destination, address[] _tokens, uint256[] _amounts);
-    event MigrationContractSet(address _newContract);
-    /// Pausable events
-    event Paused(address account);
-    event Unpaused(address account);
-
     address[] public l1Addresses;
     address[] public l2Addresses;
     address[] public restrictedL2Addresses;
@@ -172,7 +162,7 @@ contract LGEStakingForkSepoliaTest is TestSetup {
         assertEq(usdc.balanceOf(address(lgeStaking)), 0);
 
         vm.expectEmit(true, true, true, true);
-        emit Deposit(address(usdc), _amount, alice);
+        emit LGEStaking.Deposit(address(usdc), _amount, alice);
         lgeStaking.depositERC20(address(usdc), _amount);
 
         assertEq(lgeStaking.balance(address(usdc), alice), _amount);
@@ -207,7 +197,7 @@ contract LGEStakingForkSepoliaTest is TestSetup {
         assertEq(usdc.balanceOf(address(lgeStaking)), _amount0);
 
         vm.expectEmit(true, true, true, true);
-        emit Withdraw(address(usdc), _amount1, alice);
+        emit LGEStaking.Withdraw(address(usdc), _amount1, alice);
         lgeStaking.withdraw(address(usdc), _amount1);
 
         assertEq(lgeStaking.balance(address(usdc), alice), _amount0 - _amount1);
@@ -297,7 +287,7 @@ contract LGEStakingForkSepoliaTest is TestSetup {
         amounts[0] = _amount0;
 
         vm.expectEmit(true, true, true, true);
-        emit TokensMigrated(alice, alice, tokens, amounts);
+        emit LGEStaking.TokensMigrated(alice, alice, tokens, amounts);
         lgeStaking.migrate(alice, tokens);
 
         assertEq(lgeStaking.balance(address(usdt), alice), 0);
@@ -338,53 +328,13 @@ contract LGEStakingForkSepoliaTest is TestSetup {
         amounts[2] = _amount1;
 
         vm.expectEmit(true, true, true, true);
-        emit TokensMigrated(alice, alice, tokens, amounts);
+        emit LGEStaking.TokensMigrated(alice, alice, tokens, amounts);
         lgeStaking.migrate(alice, tokens);
 
         assertEq(lgeStaking.balance(address(usdt), alice), 0);
         assertEq(lgeStaking.totalDeposited(address(usdt)), 0);
         assertEq(usdt.balanceOf(address(lgeStaking)), 0);
     }
-
-    /// @dev needs updating
-    /*
-    function testMigrateUSDCSuccessConditions() public prank(alice) {
-        /// Setup
-        uint256 _amount0 = 100e6;
-        usdc.approve(address(lgeStaking), _amount0);
-        lgeStaking.depositERC20(address(usdc), _amount0);
-
-        assertEq(lgeStaking.balance(address(usdc), alice), _amount0);
-        assertEq(lgeStaking.totalDeposited(address(usdc)), _amount0);
-        assertEq(usdc.balanceOf(address(lgeStaking)), _amount0);
-
-        /// Set Migration
-        vm.stopPrank();
-        vm.startPrank(hexTrust);
-        lgeStaking.setMigrationContract(address(lgeMigration));
-        assertEq(lgeStaking.migrationActivated(), true);
-        vm.stopPrank();
-        vm.startPrank(alice);
-
-        /// Migrate
-        address[] memory tokens = new address[](1);
-        tokens[0] = address(usdc);
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = _amount0;
-
-        uint256 balanceBefore = usdx.balanceOf(address(optimismPortal));
-
-        vm.expectEmit(true, true, true, true);
-        emit TokensMigrated(alice, alice, tokens, amounts);
-        lgeStaking.migrate(alice, tokens);
-
-        assertEq(lgeStaking.balance(address(usdc), alice), 0);
-        assertEq(lgeStaking.totalDeposited(address(usdc)), 0);
-        assertEq(usdc.balanceOf(address(lgeStaking)), 0);
-
-        assertEq(usdx.balanceOf(address(optimismPortal)), balanceBefore + (_amount0 * (10 ** 12)));
-    }
-    */
 
     function testMigrateWSTETHSuccessConditions() public prank(alice) {
         /// Setup
@@ -411,7 +361,7 @@ contract LGEStakingForkSepoliaTest is TestSetup {
         amounts[0] = _amount0;
 
         vm.expectEmit(true, true, true, true);
-        emit TokensMigrated(alice, alice, tokens, amounts);
+        emit LGEStaking.TokensMigrated(alice, alice, tokens, amounts);
         lgeStaking.migrate(alice, tokens);
 
         assertEq(lgeStaking.balance(address(wstETH), alice), 0);
@@ -468,12 +418,12 @@ contract LGEStakingForkSepoliaTest is TestSetup {
 
         /// Add USDD
         vm.expectEmit(true, true, true, true);
-        emit AllowlistSet(address(usdd), true);
+        emit LGEStaking.AllowlistSet(address(usdd), true);
         lgeStaking.setAllowlist(address(usdd), true);
 
         /// Remove USDC
         vm.expectEmit(true, true, true, true);
-        emit AllowlistSet(address(usdc), false);
+        emit LGEStaking.AllowlistSet(address(usdc), false);
         lgeStaking.setAllowlist(address(usdc), false);
 
         vm.stopPrank();
@@ -495,7 +445,7 @@ contract LGEStakingForkSepoliaTest is TestSetup {
         vm.startPrank(hexTrust);
 
         vm.expectEmit(true, true, true, true);
-        emit DepositCapSet(address(usdc), _newCap);
+        emit LGEStaking.DepositCapSet(address(usdc), _newCap);
         lgeStaking.setDepositCap(address(usdc), _newCap);
 
         vm.stopPrank();
@@ -516,7 +466,7 @@ contract LGEStakingForkSepoliaTest is TestSetup {
         vm.startPrank(hexTrust);
 
         vm.expectEmit(true, true, true, true);
-        emit Paused(hexTrust);
+        emit Pausable.Paused(hexTrust);
         lgeStaking.setPaused(true);
 
         assertEq(lgeStaking.paused(), true);
@@ -533,7 +483,7 @@ contract LGEStakingForkSepoliaTest is TestSetup {
         lgeStaking.migrate(alice, tokensArray);
 
         vm.expectEmit(true, true, true, true);
-        emit Unpaused(hexTrust);
+        emit Pausable.Unpaused(hexTrust);
         lgeStaking.setPaused(false);
 
         assertEq(lgeStaking.paused(), false);
@@ -554,7 +504,7 @@ contract LGEStakingForkSepoliaTest is TestSetup {
         vm.startPrank(hexTrust);
 
         vm.expectEmit(true, true, true, true);
-        emit MigrationContractSet(newMigrationContract);
+        emit LGEStaking.MigrationContractSet(newMigrationContract);
         lgeStaking.setMigrationContract(newMigrationContract);
 
         assertEq(address(lgeStaking.lgeMigration()), newMigrationContract);

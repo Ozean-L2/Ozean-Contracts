@@ -5,7 +5,10 @@ import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {ILGEMigration} from "./interface/ILGEMigration.sol";
+import {ILGEMigration} from "src/L1/interfaces/ILGEMigration.sol";
+import {IL1StandardBridge} from "src/L1/interfaces/IL1StandardBridge.sol";
+import {IL1LidoTokensBridge} from "src/L1/interfaces/IL1LidoTokensBridge.sol";
+import {IUSDXBridge} from "src/L1/interfaces/IUSDXBridge.sol";
 
 /// @title  LGE Migration V1
 /// @notice This contract facilitates the migration of staked tokens from the LGE Staking pool
@@ -124,42 +127,4 @@ contract LGEMigrationV1 is Ownable, ILGEMigration, ReentrancyGuard {
     function setGasLimit(address _token, uint32 _limit) external onlyOwner {
         gasLimits[_token] = _limit;
     }
-}
-
-/// Interfaces ///
-
-interface IL1StandardBridge {
-    /// @custom:legacy
-    /// @notice Deposits some amount of ERC20 tokens into a target account on L2.
-    /// @param _l1Token     Address of the L1 token being deposited.
-    /// @param _l2Token     Address of the corresponding token on L2.
-    /// @param _to          Address of the recipient on L2.
-    /// @param _amount      Amount of the ERC20 to deposit.
-    /// @param _minGasLimit Minimum gas limit for the deposit message on L2.
-    /// @param _extraData   Optional data to forward to L2.
-    ///                     Data supplied here will not be used to execute any code on L2 and is
-    ///                     only emitted as extra data for the convenience of off-chain tooling.
-    function depositERC20To(
-        address _l1Token,
-        address _l2Token,
-        address _to,
-        uint256 _amount,
-        uint32 _minGasLimit,
-        bytes calldata _extraData
-    ) external;
-}
-
-interface IL1LidoTokensBridge {
-    function depositERC20To(
-        address l1Token_,
-        address l2Token_,
-        address to_,
-        uint256 amount_,
-        uint32 l2Gas_,
-        bytes calldata data_
-    ) external;
-}
-
-interface IUSDXBridge {
-    function bridge(address _stablecoin, uint256 _amount, address _to) external;
 }

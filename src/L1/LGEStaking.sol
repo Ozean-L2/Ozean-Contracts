@@ -6,7 +6,7 @@ import {SafeERC20} from "openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"
 import {IERC20} from "openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Pausable} from "openzeppelin/contracts/security/Pausable.sol";
-import {ILGEMigration} from "src/L1/interface/ILGEMigration.sol";
+import {ILGEMigration} from "src/L1/interfaces/ILGEMigration.sol";
 
 /// @title  LGE Staking
 /// @notice This contract facilitates staking of ERC20 tokens and ETH for users and allows migration of staked assets to
@@ -176,12 +176,4 @@ contract LGEStaking is Ownable, ReentrancyGuard, Pausable {
     function migrationActivated() public view returns (bool activated) {
         activated = (address(lgeMigration) != address(0));
     }
-}
-
-interface IstETH is IERC20 {
-    function submit(address _referral) external payable returns (uint256);
-}
-
-interface IwstETH is IERC20 {
-    function wrap(uint256 _stETHAmount) external returns (uint256);
 }

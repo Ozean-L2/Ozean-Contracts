@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {ScriptUtils, console} from "script/utils/ScriptUtils.sol";
+import {ScriptUtils} from "script/utils/ScriptUtils.sol";
 import {OzUSD} from "src/L2/OzUSD.sol";
 import {WozUSD} from "src/L2/WozUSD.sol";
 

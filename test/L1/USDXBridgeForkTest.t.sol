@@ -3,16 +3,11 @@ pragma solidity 0.8.28;
 
 import {TestSetup} from "test/utils/TestSetup.sol";
 import {TestERC20Decimals, TestERC20DecimalsFeeOnTransfer} from "test/utils/Mocks.sol";
+import {IERC20Alt} from "test/utils/TestInterfaces.sol";
 import {USDXBridgeDeploy, USDXBridge} from "script/L1/USDXBridgeDeploy.s.sol";
 
 /// @dev forge test --match-contract USDXBridgeForkMainetTest
 contract USDXBridgeForkMainetTest is TestSetup {
-    /// USDXBridge
-    event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _to);
-    event WithdrawCoins(address indexed _coin, uint256 _amount, address indexed _to);
-    event AllowlistSet(address indexed _coin, bool _set);
-    event DepositCapSet(address indexed _coin, uint256 _newDepositCap);
-
     function setUp() public override {
         super.setUp();
         _forkL1Mainnet();
@@ -114,7 +109,7 @@ contract USDXBridgeForkMainetTest is TestSetup {
 
         /// Bridge
         vm.expectEmit(true, true, true, true);
-        emit BridgeDeposit(address(usdc), _amount, alice);
+        emit USDXBridge.BridgeDeposit(address(usdc), _amount, alice);
         usdxBridge.bridge{value: 0.01 ether}(address(usdc), _amount, alice);
 
         assertEq(usdxBridge.totalBridged(address(usdc)), usdxAmount);
@@ -128,7 +123,7 @@ contract USDXBridgeForkMainetTest is TestSetup {
 
         /// Bridge
         vm.expectEmit(true, true, true, true);
-        emit BridgeDeposit(address(usdt), _amount, alice);
+        emit USDXBridge.BridgeDeposit(address(usdt), _amount, alice);
         usdxBridge.bridge{value: 0.01 ether}(address(usdt), _amount, alice);
 
         assertEq(usdxBridge.totalBridged(address(usdt)), usdxAmount);
@@ -141,7 +136,7 @@ contract USDXBridgeForkMainetTest is TestSetup {
 
         /// Bridge
         vm.expectEmit(true, true, true, true);
-        emit BridgeDeposit(address(dai), _amount, alice);
+        emit USDXBridge.BridgeDeposit(address(dai), _amount, alice);
         usdxBridge.bridge{value: 0.01 ether}(address(dai), _amount, alice);
 
         assertEq(usdxBridge.totalBridged(address(dai)), _amount);
@@ -161,12 +156,12 @@ contract USDXBridgeForkMainetTest is TestSetup {
 
         /// Add USDE
         vm.expectEmit(true, true, true, true);
-        emit AllowlistSet(address(usde), true);
+        emit USDXBridge.AllowlistSet(address(usde), true);
         usdxBridge.setAllowlist(address(usde), true);
 
         /// Remove DAI
         vm.expectEmit(true, true, true, true);
-        emit AllowlistSet(address(dai), false);
+        emit USDXBridge.AllowlistSet(address(dai), false);
         usdxBridge.setAllowlist(address(dai), false);
 
         vm.stopPrank();
@@ -186,7 +181,7 @@ contract USDXBridgeForkMainetTest is TestSetup {
         vm.startPrank(hexTrust);
 
         vm.expectEmit(true, true, true, true);
-        emit DepositCapSet(address(usdc), _newCap);
+        emit USDXBridge.DepositCapSet(address(usdc), _newCap);
         usdxBridge.setDepositCap(address(usdc), _newCap);
 
         vm.stopPrank();
@@ -209,7 +204,7 @@ contract USDXBridgeForkMainetTest is TestSetup {
         vm.startPrank(hexTrust);
 
         vm.expectEmit(true, true, true, true);
-        emit WithdrawCoins(address(dai), _amount, hexTrust);
+        emit USDXBridge.WithdrawCoins(address(dai), _amount, hexTrust);
         usdxBridge.withdrawERC20(address(dai), _amount);
 
         assertEq(dai.balanceOf(address(usdxBridge)), balanceBefore - _amount);
@@ -229,13 +224,9 @@ contract USDXBridgeForkMainetTest is TestSetup {
         vm.startPrank(hexTrust);
 
         vm.expectEmit(true, true, true, true);
-        emit WithdrawCoins(address(usdc), _amount, hexTrust);
+        emit USDXBridge.WithdrawCoins(address(usdc), _amount, hexTrust);
         usdxBridge.withdrawERC20(address(usdc), _amount);
 
         assertEq(usdc.balanceOf(hexTrust), _amount);
     }
-}
-
-interface IERC20Alt {
-    function approve(address _spender, uint256 _value) external;
 }

@@ -1,17 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {TestSetup, IUSDX} from "test/utils/TestSetup.sol";
+import {TestSetup} from "test/utils/TestSetup.sol";
 import {OzUSDDeploy, OzUSD} from "script/L2/OzUSDDeploy.s.sol";
 
 /// @dev forge test --match-contract OzUSDForkTest
 contract OzUSDForkTest is TestSetup {
-    event TransferShares(address indexed from, address indexed to, uint256 sharesValue);
-    event SharesBurnt(
-        address indexed account, uint256 preRebaseTokenAmount, uint256 postRebaseTokenAmount, uint256 sharesAmount
-    );
-    event YieldDistributed(uint256 _previousTotalBalance, uint256 _newTotalBalance);
-
     function setUp() public override {
         super.setUp();
         _forkL2();
@@ -20,8 +14,6 @@ contract OzUSDForkTest is TestSetup {
         OzUSDDeploy deployScript = new OzUSDDeploy();
         deployScript.run();
         ozUSD = deployScript.ozUSD();
-
-        //deal(address(l2USDX), hexTrust, 1000e18);
     }
 
     /// SETUP ///
@@ -110,7 +102,7 @@ contract OzUSDForkTest is TestSetup {
 
         /// Rebase
         vm.expectEmit(true, true, true, true);
-        emit YieldDistributed(1e18, 1e18 + amount);
+        emit OzUSD.YieldDistributed(1e18, 1e18 + amount);
         ozUSD.distributeYield(amount);
 
         assertEq(ozUSD.getPooledUSDXByShares(amount), (amount * l2USDX.balanceOf(address(ozUSD))) / 1e18);
@@ -135,7 +127,7 @@ contract OzUSDForkTest is TestSetup {
         l2USDX.approve(address(ozUSD), _amountB);
 
         vm.expectEmit(true, true, true, true);
-        emit YieldDistributed(1e18 + _amountA, 1e18 + _amountA + _amountB);
+        emit OzUSD.YieldDistributed(1e18 + _amountA, 1e18 + _amountA + _amountB);
         ozUSD.distributeYield(_amountB);
 
         assertEq(l2USDX.balanceOf(address(ozUSD)), 1e18 + _amountA + _amountB);
@@ -183,7 +175,7 @@ contract OzUSDForkTest is TestSetup {
         l2USDX.approve(address(ozUSD), _amountB);
 
         vm.expectEmit(true, true, true, true);
-        emit YieldDistributed(1e18 + _amountA, 1e18 + _amountA + _amountB);
+        emit OzUSD.YieldDistributed(1e18 + _amountA, 1e18 + _amountA + _amountB);
         ozUSD.distributeYield(_amountB);
 
         vm.stopPrank();

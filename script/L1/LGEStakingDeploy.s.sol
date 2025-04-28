@@ -13,13 +13,11 @@ contract LGEStakingDeploy is ScriptUtils {
         address[] memory tokens;
         uint256[] memory depositCaps;
         if (block.chainid == 1) {
-            hexTrust = vm.envAddress("ADMIN");
-            tokens = vm.envAddress("L1_MAINNET_LGE_TOKENS", ",");
-            depositCaps = vm.envUint("L1_MAINNET_LGE_CAPS", ",");
+            hexTrust = ADMIN;
+            (tokens, depositCaps) = _getMainnetLGEArrays();
         } else if (block.chainid == 11155111) {
-            hexTrust = vm.envAddress("ADMIN");
-            tokens = vm.envAddress("L1_SEPOLIA_LGE_TOKENS", ",");
-            depositCaps = vm.envUint("L1_SEPOLIA_LGE_CAPS", ",");
+            hexTrust = ADMIN;
+            (tokens, depositCaps) = _getSepoliaLGEArrays();
         } else {
             revert();
         }

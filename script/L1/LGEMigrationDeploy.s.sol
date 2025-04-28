@@ -27,27 +27,21 @@ contract LGEMigrationDeploy is ScriptUtils {
         address[] memory l2Addresses;
         address[] memory restrictedL2Addresses;
         if (block.chainid == 1) {
-            hexTrust = vm.envAddress("ADMIN");
-            l1StandardBridge = vm.envAddress("L1_MAINNET_STANDARD_BRIDGE");
-            l1LidoTokensBridge = vm.envAddress("L1_MAINNET_LIDO_BRIDGE");
-            usdxBridge = vm.envAddress("L1_MAINNET_USDX_BRIDGE");
-            lgeStaking = vm.envAddress("L1_MAINNET_LGE_STAKING");
-            usdc = vm.envAddress("L1_MAINNET_USDC");
-            wstETH = vm.envAddress("L1_MAINNET_WSTETH");
-            l1Addresses = vm.envAddress("L1_MAINNET_ADDRESSES", ",");
-            l2Addresses = vm.envAddress("L2_MAINNET_ADDRESSES", ",");
-            restrictedL2Addresses = vm.envAddress("L2_MAINNET_RESTRICTED_ADDRESSES", ",");
+            hexTrust = ADMIN;
+            l1StandardBridge = L1_MAINNET_STANDARD_BRIDGE;
+            l1LidoTokensBridge = L1_MAINNET_LIDO_BRIDGE;
+            usdxBridge = L1_MAINNET_USDX_BRIDGE;
+            lgeStaking = L1_MAINNET_LGE_STAKING;
+            usdc = L1_MAINNET_USDC;
+            wstETH = L1_MAINNET_WSTETH;
+            (l1Addresses, l2Addresses, restrictedL2Addresses) = _getMainnetMigrationArrays();
         } else if (block.chainid == 11155111) {
-            hexTrust = vm.envAddress("ADMIN");
-            l1StandardBridge = vm.envAddress("L1_SEPOLIA_STANDARD_BRIDGE");
-            l1LidoTokensBridge = vm.envAddress("L1_SEPOLIA_LIDO_BRIDGE");
-            //usdxBridge = vm.envAddress("L1_SEPOLIA_USDX_BRIDGE");
-            //lgeStaking = vm.envAddress("L1_SEPOLIA_LGE_STAKING");
-            usdc = vm.envAddress("L1_SEPOLIA_USDC");
-            wstETH = vm.envAddress("L1_SEPOLIA_WSTETH");
-            l1Addresses = vm.envAddress("L1_SEPOLIA_ADDRESSES", ",");
-            l2Addresses = vm.envAddress("L2_SEPOLIA_ADDRESSES", ",");
-            restrictedL2Addresses = vm.envAddress("L2_SEPOLIA_RESTRICTED_ADDRESSES", ",");
+            hexTrust = ADMIN;
+            l1StandardBridge = L1_SEPOLIA_STANDARD_BRIDGE;
+            l1LidoTokensBridge = L1_SEPOLIA_LIDO_BRIDGE;
+            usdc = L1_SEPOLIA_USDC;
+            wstETH = L1_SEPOLIA_WSTETH;
+            (l1Addresses, l2Addresses, restrictedL2Addresses) = _getSepoliaMigrationArrays();
         } else {
             revert();
         }

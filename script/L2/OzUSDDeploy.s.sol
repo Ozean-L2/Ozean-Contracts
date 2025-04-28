@@ -13,13 +13,13 @@ contract OzUSDDeploy is ScriptUtils {
         address l2USDX;
         uint256 initialSharesAmount;
         if (block.chainid == 1) {
-            hexTrust = vm.envAddress("ADMIN");
-            l2USDX = vm.envAddress("L2_MAINNET_USDX");
-            initialSharesAmount = vm.envUint("INITIAL_SHARE_AMOUNT");
+            hexTrust = ADMIN;
+            l2USDX = L2_MAINNET_USDX;
+            initialSharesAmount = INITIAL_SHARE_AMOUNT;
         } else if (block.chainid == 31911) {
-            hexTrust = vm.envAddress("ADMIN");
-            l2USDX = vm.envAddress("L2_SEPOLIA_USDX");
-            initialSharesAmount = vm.envUint("INITIAL_SHARE_AMOUNT");
+            hexTrust = ADMIN;
+            l2USDX = L2_SEPOLIA_USDX;
+            initialSharesAmount = INITIAL_SHARE_AMOUNT;
         } else {
             revert();
         }

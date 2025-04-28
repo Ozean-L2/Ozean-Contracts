@@ -11,7 +11,7 @@ import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
 ///         based on shares controlled by each account. The total pooled USDX (protocol-controlled USDX) determines the
 ///         total balances; meaning that any USDX sent to this contract automatically rebases all user balances.
 ///         1 USDX == 1 ozUSD.
-/// @dev    !!! NEEDS AN AUDIT !!!
+/// @dev    !!! DEPRECATED - NEEDS AN AUDIT !!!
 ///         Also needs a natspec redo
 ///         This contract does not fully comply with the ERC20 standard as rebasing events do not emit `Transfer`
 ///         events.

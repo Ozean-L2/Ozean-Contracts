@@ -15,17 +15,15 @@ contract USDXBridgeDeploy is ScriptUtils {
         address[] memory stablecoins;
         uint256[] memory depositCaps;
         if (block.chainid == 1) {
-            hexTrust = vm.envAddress("ADMIN");
-            l1USDX = vm.envAddress("L1_MAINNET_USDX");
-            eid = uint32(vm.envUint("EID"));
-            stablecoins = vm.envAddress("L1_MAINNET_BRIDGE_TOKENS", ",");
-            depositCaps = vm.envUint("L1_MAINNET_BRIDGE_CAPS", ",");
+            hexTrust = ADMIN;
+            l1USDX = L1_MAINNET_USDX;
+            eid = EID;
+            (stablecoins, depositCaps) = _getMainnetUSDXBridgeArrays();
         } else if (block.chainid == 11155111) {
-            hexTrust = vm.envAddress("ADMIN");
-            l1USDX = vm.envAddress("L1_SEPOLIA_USDX");
-            eid = uint32(vm.envUint("EID"));
-            stablecoins = vm.envAddress("L1_SEPOLIA_BRIDGE_TOKENS", ",");
-            depositCaps = vm.envUint("L1_SEPOLIA_BRIDGE_CAPS", ",");
+            hexTrust = ADMIN;
+            l1USDX = L1_SEPOLIA_USDX;
+            eid = TESTNET_EID;
+            (stablecoins, depositCaps) = _getSepoliaUSDXBridgeArrays();
         } else {
             revert();
         }

@@ -21,3 +21,7 @@ interface IWstETH is IERC20 {
     function wrap(uint256 _stETHAmount) external returns (uint256);
     function getWstETHByStETH(uint256 _stETHAmount) external pure returns (uint256);
 }
+
+interface IERC20Alt {
+    function approve(address _spender, uint256 _value) external;
+}

@@ -6,11 +6,16 @@ This is a [Foundry](https://book.getfoundry.sh/) repo for the set of custom Ozea
 - `forge test -vvv`
 - `forge coverage --report lcov`
 
+## Deployment Flow
+- Run the following deployment script, replacing the `{$PRIVATE_KEY}`, `{$PATH}`, and `{$RPC_URL}` values as necessary: `forge script {$PATH} --private-key {$PRIVATE_KEY --rpc-url {$RPC_URL} --broadcast`
+- Produce the standard input JSON file using the following command: `forge verify-contract --compiler-version 0.8.28 --show-standard-json-input {$CONTRACT_ADDRESS} {$CONTRACT_NAME}`
+- Use the produced file to verify the contract on the relevant block explorers.
+- Consult [this documentation](https://book.getfoundry.sh/forge/deploying) for more information.
+
 ## Layer Zero
 - [LayerZeroScan](https://testnet.layerzeroscan.com/)
 - [OFT Implementation](https://docs.layerzero.network/v2/developers/evm/oft/quickstart)
 - [Endpoints](https://docs.layerzero.network/v2/developers/evm/technical-reference/deployed-contracts)
-
 
 ## Layer One Deployments
 
@@ -20,64 +25,33 @@ This is a [Foundry](https://book.getfoundry.sh/) repo for the set of custom Ozea
 
 | **Contract** | **Address** |
 |:---:|:---:|
-| **LGE Staking** | [0xdD4297dECCE33fdA78dB8330832b51F3df610db9](https://eth.blockscout.com/address/0xdD4297dECCE33fdA78dB8330832b51F3df610db9?tab=contract_source_code)|
+| **LGE Staking** | [0xdD4297dECCE33fdA78dB8330832b51F3df610db9](https://etherscan.io/address/0xdD4297dECCE33fdA78dB8330832b51F3df610db9#code)|
 
-#### LGE Staking Assets/Cap:
-
-| **Asset** | **Address** | **Deposit Cap** | **Decimals** |
-|:---:|:---:|:---:|:---:|
-| **WBTC** | [0x2260fac5e5542a773aa44fbcfedf7c193bc2c599](https://etherscan.io/address/0x2260fac5e5542a773aa44fbcfedf7c193bc2c599)| 100_000_000 | 8 |
-| **SolvBTC** | [0x7a56e1c57c7475ccf742a1832b028f0456652f97](https://etherscan.io/address/0x7a56e1c57c7475ccf742a1832b028f0456652f97)| 100_000_000 | 18 |
-| **WSOL** | [0xD31a59c85aE9D8edEFeC411D448f90841571b89c](https://etherscan.io/address/0xD31a59c85aE9D8edEFeC411D448f90841571b89c)| 100_000_000 | 9 |
-| **WstETH** | [0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0](https://etherscan.io/address/0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0)| 100_000_000 | 18 |
-| **WETH** | [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2](https://etherscan.io/address/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2)| 100_000_000 | 18 |
-| **SUSDE** | [0x9D39A5DE30e57443BfF2A8307A4256c8797A3497](https://etherscan.io/address/0x9D39A5DE30e57443BfF2A8307A4256c8797A3497)| 100_000_000 | 18 |
-| **USDY** | [0x96F6eF951840721AdBF46Ac996b59E0235CB985C](https://etherscan.io/address/0x96F6eF951840721AdBF46Ac996b59E0235CB985C)| 100_000_000 | 18 |
-| **WUSDM** | [0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812](https://etherscan.io/address/0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812)| 100_000_000 | 18 |
-| **USDX** | [0xf8750b54d86BE7aE9e32b4A0C826811198D63313](https://etherscan.io/address/0xf8750b54d86BE7aE9e32b4A0C826811198D63313)| 100_000_000 | 18 |
-| **USDC** | [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48](https://etherscan.io/address/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)| 100_000_000 | 6 |
-
-[**LGE Staking Admin**](https://etherscan.io/address/0x8A358c6ef869e3A1110398cC12581deB5946eB1a#code)
+[LGE Staking Admin](https://etherscan.io/address/0x8A358c6ef869e3A1110398cC12581deB5946eB1a#code)
 
 ### Sepolia
 
 #### Contracts:
 
-Note that the USDX Bridge Alt bridge does not have minting rights for usdx, and needs to be seeded with tokens for the bridge to work. Additionally, the bridge is configured for the [Flare Testnet](https://testnet.flarescan.com/).
+The `USDX (Basic ERC20)` contract is a basic ERC20 token that allows for infinite minting and is a simple stand-in for USDX on Sepolia. In contrast, the `USDX (Hex Trust L0 Path)` contract has been deployed by Hex Trust and is the official testnet deployment related to [this repo](https://github.com/hextrust/hex-stablecoin-usd). Layer Zero is not currently supported on the Ozean testnet and so in order to produce an E2E test flow the USDX bridging, the Flare testnet in used instead.
+
+Note that the `USDXBridgeAlt` contract does not have minting rights for USDX, and needs to be seeded with tokens for the bridge to work. Additionally, the bridge is configured for the [Flare Testnet](https://testnet.flarescan.com/).
+
+Testnet tokens can be minted for free from the [Aave Faucet](https://app.aave.com/faucet/).
 
 | **Contract** | **Address** |
 |:---:|:---:|
-| **USDX** | [0x43bd82D1e29a1bEC03AfD11D5a3252779b8c760c](https://sepolia.etherscan.io/token/0x43bd82d1e29a1bec03afd11d5a3252779b8c760c#code)|
-| **USDX Bridge Alt** | [0x14D72e0C6f6b1117CfBF6a66C79158c8d6a18bC7](https://eth-sepolia.blockscout.com/address/0x14D72e0C6f6b1117CfBF6a66C79158c8d6a18bC7)|
-| **USDX Bridge (DEPRECATED)** | [0x084C27a0bE5dF26ed47F00678027A6E76B14a0B4](https://sepolia.etherscan.io/address/0x084c27a0be5df26ed47f00678027a6e76b14a0b4#code)|
+| **USDX (Basic ERC20)** | [0x43bd82D1e29a1bEC03AfD11D5a3252779b8c760c](https://sepolia.etherscan.io/token/0x43bd82d1e29a1bec03afd11d5a3252779b8c760c#code)|
+| **USDX (Hex Trust L0 Path)** | [0x5DB6dA53eF70870f20d3E90Fa7c518A95C4B1563](https://sepolia.etherscan.io/address/0x5DB6dA53eF70870f20d3E90Fa7c518A95C4B1563)|
+| **USDX Bridge Alt (L0 Flare Path)** | [0x14D72e0C6f6b1117CfBF6a66C79158c8d6a18bC7](https://eth-sepolia.blockscout.com/address/0x14D72e0C6f6b1117CfBF6a66C79158c8d6a18bC7)|
+| **USDX Bridge (OP Standard Bridge Path)** | [0x6Fbd0016A8e43e34890A1322C1934D5D7D45f0E1](https://sepolia.etherscan.io/address/0x6fbd0016a8e43e34890a1322c1934d5d7d45f0e1#writeContract)|
 | **LGE Staking** | [0xBAFAAfC8E2d8F6Ebf9Fa49646C36D640B4e07203](https://sepolia.etherscan.io/address/0xBAFAAfC8E2d8F6Ebf9Fa49646C36D640B4e07203#code)|
-
-#### USDX Bridge Assets/Cap:
-| **Asset** | **Address** |**Deposit Cap** |
-|:---:|:---:|:---:|
-| **USDT** | [0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0](https://sepolia.etherscan.io/address/0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0)| 1_000_000_000_000 |
-| **DAI** | [0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357](https://sepolia.etherscan.io/address/0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357)| 1_000_000_000_000 |
-| **USDC** | [0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8](https://sepolia.etherscan.io/address/0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8)| 1_000_000_000_000 |
-| **USDC** | [0x15795aadca3759d7b356DecE036c285b1FBb32aa](https://sepolia.etherscan.io/address/0x15795aadca3759d7b356DecE036c285b1FBb32aa)| 1_000_000_000_000 |
-
-#### LGE Staking Assets/Cap:
-
-| **Asset** | **Address** |**Deposit Cap** |
-|:---:|:---:|:---:|
-| **wstETH** | [0xB82381A3fBD3FaFA77B3a7bE693342618240067b](https://sepolia.etherscan.io/address/0xB82381A3fBD3FaFA77B3a7bE693342618240067b)| 1_000_000 |
-| **WBTC** | [0x29f2D40B0605204364af54EC677bD022dA425d03](https://sepolia.etherscan.io/address/0x29f2D40B0605204364af54EC677bD022dA425d03)| 1_000_000 |
-| **USDT** | [0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0](https://sepolia.etherscan.io/address/0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0)| 1_000_000 |
-| **DAI** | [0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357](https://sepolia.etherscan.io/address/0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357)| 1_000_000 |
-| **USDC** | [0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8](https://sepolia.etherscan.io/address/0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8)| 1_000_000 |
-| **AAVE** | [0x88541670E55cC00bEEFD87eB59EDd1b7C511AC9a](https://sepolia.etherscan.io/address/0x88541670E55cC00bEEFD87eB59EDd1b7C511AC9a)| 1_000_000 |
-
-[**Aave Faucet**](https://app.aave.com/faucet/)
 
 ## Layer Two Deployments
 
 ### Ozean Mainnet
 
-TBD
+TBD...
 
 ### Ozean Poseidon
 
@@ -85,8 +59,11 @@ TBD
 
 | **Contract** | **Address** |
 |:---:|:---:|
-| **ozUSDV2** | [0x743af9531E0f9944E42C2a74D9C65514925d6830](https://poseidon-testnet.explorer.caldera.xyz/address/0x743af9531E0f9944E42C2a74D9C65514925d6830)|
-| **ozUSD Impl (DEPRECATED)** | [0x9e76FE3E3859A4BF1C30d2DAD7b3C35d8654Eb50](https://ozean-testnet.explorer.caldera.xyz/address/0x9e76FE3E3859A4BF1C30d2DAD7b3C35d8654Eb50)|
-| **ozUSD Proxy (DEPRECATED)** | [0x1Ce4888a6dED8d6aE5F5D9ca1CABc758c680950b](https://ozean-testnet.explorer.caldera.xyz/address/0x1Ce4888a6dED8d6aE5F5D9ca1CABc758c680950b)|
-| **wozUSD (DEPRECATED)**  | [0x2f6807b76c426527C3a5C442E8697f12C554195b](https://ozean-testnet.explorer.caldera.xyz/address/0x2f6807b76c426527C3a5C442E8697f12C554195b)|
+| **USDX (OP Standard Bridge Path)** | [0xe29f6fbc4CB3F01e2D38F0Aab7D8861285EE9C36](https://poseidon-testnet.explorer.caldera.xyz/token/0xe29f6fbc4CB3F01e2D38F0Aab7D8861285EE9C36?tab=contract)|
+| **ozUSDV2 (OP Standard Bridge Path)** | [0x743af9531E0f9944E42C2a74D9C65514925d6830](https://poseidon-testnet.explorer.caldera.xyz/address/0x743af9531E0f9944E42C2a74D9C65514925d6830)|
 
+### Flare Testnet
+
+| **Contract** | **Address** |
+|:---:|:---:|
+| **USDX (L0 Flare Path)** | [0x6ccB96ae6D52e88ed2269288F5e47bD2914C2785](https://testnet.flarescan.com/token/0x6ccB96ae6D52e88ed2269288F5e47bD2914C2785?type=erc20&chainid=114)|

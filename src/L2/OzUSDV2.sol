@@ -65,24 +65,16 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
     }
 
     /// @dev See {IERC4262-_deposit}.
-    function _deposit(
-        address caller,
-        address receiver,
-        uint256 assets,
-        uint256 shares
-    ) internal override {
+    function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
         super._deposit(caller, receiver, assets, shares);
         totalDeposited += assets;
     }
 
     /// @dev See {IERC4262-_withdraw}.
-    function _withdraw(
-        address caller,
-        address receiver,
-        address owner,
-        uint256 assets,
-        uint256 shares
-    ) internal override {
+    function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
+        internal
+        override
+    {
         super._withdraw(caller, receiver, owner, assets, shares);
         totalDeposited -= assets;
     }

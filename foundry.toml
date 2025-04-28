@@ -9,9 +9,7 @@ fuzz_max_global_rejects = 420_000
 gas_reports = [
     "USDXBridge",
     "LGEStaking",
-    "LGEMigrationV1",
-    "OzUSD",
-    "WozUSD"
+    "OzUSDV2"
 ]
 
 remappings = [
