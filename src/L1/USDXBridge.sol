@@ -65,6 +65,7 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     /// @param  _owner The address granted ownership rights to this contract.
     /// @param  _l1USDX The address for the USDX token on Ethereum mainnet.
     /// @param  _l2USDX The address for the USDX token on Ozean mainnet.
+    /// @param  _standardBridge The address of the standard bridge contract.
     /// @param  _stablecoins An array of allow-listed stablecoins that can be used to mint and bridge USDX.
     /// @param  _depositCaps The deposit caps per stablecoin for this contract, which limits the total amount bridged.
     /// @dev    Ensure that the index for each deposit cap aligns with the index of the stablecoin that is allowlisted.
@@ -74,12 +75,14 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         address _owner,
         address _l1USDX,
         address _l2USDX,
+        address _standardBridge,
         address[] memory _stablecoins,
         uint256[] memory _depositCaps
     ) {
         _transferOwnership(_owner);
         l1USDX = IUSDX(_l1USDX);
         l2USDX = _l2USDX;
+        standardBridge = IL1StandardBridge(_standardBridge);
         gasLimit = 21000;
         uint256 length = _stablecoins.length;
         require(
@@ -101,7 +104,13 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     /// @param  _stablecoin Depositing stablecoin address.
     /// @param  _amount The amount of deposit stablecoin to be swapped for USDX.
     /// @param  _to Recieving address on L2.
-    function bridge(address _stablecoin, uint256 _amount, address _to) external payable nonReentrant {
+    /// @param  _extraData Optional data to forward to L2.
+    function bridge(
+        address _stablecoin, 
+        uint256 _amount, 
+        address _to,
+        bytes calldata _extraData
+    ) external payable nonReentrant {
         /// Checks
         require(allowlisted[_stablecoin], "USDX Bridge: Stablecoin not accepted.");
         require(_amount > 0, "USDX Bridge: May not bridge nothing.");
@@ -122,7 +131,7 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         l1USDX.mint(address(this), bridgeAmount);
         /// Bridge USDX
         l1USDX.approve(address(standardBridge), bridgeAmount);
-        standardBridge.depositERC20To(address(l1USDX), l2USDX, _to, bridgeAmount, gasLimit, "");
+        standardBridge.depositERC20To(address(l1USDX), l2USDX, _to, bridgeAmount, gasLimit, _extraData);
         /// @dev some check to ensure tokens are sent in case of soft-revert at the bridge
         emit BridgeDeposit(_stablecoin, _amount, _to);
     }

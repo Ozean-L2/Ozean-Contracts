@@ -9,7 +9,7 @@ contract Constants {
     uint32 public constant EID = 30295;
     uint32 public constant TESTNET_EID = 40294;
 
-    address public constant L1_MAINNET_STANDARD_BRIDGE = address(420);
+    address public constant L1_MAINNET_STANDARD_BRIDGE = 0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1;
     address public constant L1_MAINNET_LIDO_BRIDGE = address(420);
     address public constant L1_MAINNET_USDX_BRIDGE = address(420);
     address public constant L1_MAINNET_LGE_STAKING = 0xdD4297dECCE33fdA78dB8330832b51F3df610db9;

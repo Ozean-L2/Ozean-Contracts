@@ -48,6 +48,41 @@ contract USDXBridgeForkMainetTest is TestSetup {
         // assertEq(usdxBridge.totalBridged(address(dai)), 0);
     }
 
+    function testBridgeUSDXWithUSDCAndExtraData() public {
+        // Setup
+        uint256 amount = 100e6; // 100 USDC
+        bytes memory extraData = abi.encode("test data");
+        uint256 usdxAmount = amount * (10 ** 12); // Convert to USDX decimals
+        
+        // Deal USDC to alice
+        deal(address(usdc), alice, amount);
+        
+        vm.startPrank(alice);
+        
+        // Approve USDC spending
+        usdc.approve(address(usdxBridge), amount);
+
+        // Get initial balances
+        uint256 aliceUSDCBefore = usdc.balanceOf(alice);
+        uint256 bridgeUSDCBefore = usdc.balanceOf(address(usdxBridge));
+        uint256 totalBridgedBefore = usdxBridge.totalBridged(address(usdc));
+
+        // Execute bridge operation (removed value parameter)
+        usdxBridge.bridge(
+            address(usdc),
+            amount,
+            alice,
+            extraData
+        );
+
+        // Verify state changes
+        assertEq(usdc.balanceOf(alice), aliceUSDCBefore - amount, "Alice USDC balance not decreased");
+        assertEq(usdc.balanceOf(address(usdxBridge)), bridgeUSDCBefore + amount, "Bridge USDC balance not increased");
+        assertEq(usdxBridge.totalBridged(address(usdc)), totalBridgedBefore + usdxAmount, "Total bridged not increased");
+        
+        vm.stopPrank();
+    }
+
     /*
     function testDeployRevertConditions() public {
         /// Unequal array length
