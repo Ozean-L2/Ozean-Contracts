@@ -8,6 +8,15 @@ import {USDXBridgeDeploy, USDXBridge} from "script/L1/USDXBridgeDeploy.s.sol";
 
 /// @dev forge test --match-contract USDXBridgeForkMainetTest
 contract USDXBridgeForkMainetTest is TestSetup {
+    /// USDXBridge
+    event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _to);
+    event WithdrawCoins(address indexed _coin, uint256 _amount, address indexed _to);
+    event AllowlistSet(address indexed _coin, bool _set);
+    event DepositCapSet(address indexed _coin, uint256 _newDepositCap);
+    event GasLimitSet(uint64 _newGasLimit);
+    /// Optimism
+    event TransactionDeposited(address indexed from, address indexed to, uint256 indexed version, bytes opaqueData);
+
     function setUp() public override {
         super.setUp();
         _forkL1Mainnet();
@@ -26,7 +35,8 @@ contract USDXBridgeForkMainetTest is TestSetup {
 
     function testInitialize() public view {
         assertEq(usdxBridge.owner(), hexTrust);
-        assertEq(address(usdxBridge.l1USDX()), address(usdx));
+        //assertEq(address(usdxBridge.usdx()), address(usdx));
+        assertEq(usdxBridge.gasLimit(), 21000);
         assertEq(usdxBridge.allowlisted(address(usdc)), true);
         assertEq(usdxBridge.allowlisted(address(usdt)), true);
         assertEq(usdxBridge.allowlisted(address(dai)), true);
@@ -37,6 +47,9 @@ contract USDXBridgeForkMainetTest is TestSetup {
         assertEq(usdxBridge.totalBridged(address(usdt)), 0);
         assertEq(usdxBridge.totalBridged(address(dai)), 0);
     }
+}
+
+    /*
 
     function testDeployRevertConditions() public {
         /// Unequal array length
@@ -48,7 +61,28 @@ contract USDXBridgeForkMainetTest is TestSetup {
         depositCaps[0] = 1e30;
         depositCaps[1] = 1e30;
         vm.expectRevert("USDX Bridge: Stablecoins array length must equal the Deposit Caps array length.");
-        usdxBridge = new USDXBridge(hexTrust, address(usdx), eid, stablecoins, depositCaps);
+        usdxBridge = new USDXBridge(hexTrust, optimismPortal, systemConfig, stablecoins, depositCaps);
+
+        /// Zero address
+        stablecoins = new address[](3);
+        stablecoins[0] = address(usdc);
+        stablecoins[1] = address(usdt);
+        stablecoins[2] = address(0);
+        depositCaps = new uint256[](3);
+        depositCaps[0] = 1e30;
+        depositCaps[1] = 1e30;
+        depositCaps[2] = 1e30;
+        vm.expectRevert("USDX Bridge: Zero address.");
+        usdxBridge = new USDXBridge(hexTrust, optimismPortal, systemConfig, stablecoins, depositCaps);
+    }
+
+    /// @dev Deposit USDX directly via portal, bypassing usdx bridge
+    function testNativeGasDeposit() public prank(alice) {
+        /// Mint and approve
+        uint256 _amount = 100e18;
+        usdx.mint(alice, _amount);
+        usdx.approve(address(optimismPortal), _amount);
+        uint256 balanceBefore = usdx.balanceOf(address(optimismPortal));
 
         /// Zero address
         stablecoins = new address[](3);

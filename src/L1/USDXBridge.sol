@@ -61,7 +61,7 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     /// @notice The constructor contract set up.
     /// @param  _owner The address granted ownership rights to this contract.
     /// @param  _l1USDX The address for the USDX token on Ethereum mainnet.
-    /// @param  _eid The endpoint id for the Layer Zero transfer.
+    /// @param  _l2USDX The address for the USDX token on Ozean mainnet.
     /// @param  _stablecoins An array of allow-listed stablecoins that can be used to mint and bridge USDX.
     /// @param  _depositCaps The deposit caps per stablecoin for this contract, which limits the total amount bridged.
     /// @dev    Ensure that the index for each deposit cap aligns with the index of the stablecoin that is allowlisted.
@@ -70,13 +70,14 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     constructor(
         address _owner,
         address _l1USDX,
-        uint32 _eid,
+        address _l2USDX,
         address[] memory _stablecoins,
         uint256[] memory _depositCaps
     ) {
         _transferOwnership(_owner);
         l1USDX = IUSDX(_l1USDX);
-        eid = _eid;
+        l2USDX = _l2USDX;
+        gasLimit = 21000;
         uint256 length = _stablecoins.length;
         require(
             length == _depositCaps.length,
@@ -116,20 +117,9 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         totalBridged[_stablecoin] += bridgeAmount;
         /// Mint USDX
         l1USDX.mint(address(this), bridgeAmount);
-        /// Bridge USDX via LZ
-        bytes memory extraOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(65000, 0);
-        SendParam memory sendParam =
-            SendParam(eid, addressToBytes32(_to), bridgeAmount, bridgeAmount, extraOptions, "", "");
-        MessagingFee memory fee = l1USDX.quoteSend(sendParam, false);
-        require(msg.value > fee.nativeFee, "USDX Bridge: Layer Zero fee.");
-        (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt) =
-            l1USDX.send{value: fee.nativeFee}(sendParam, fee, msg.sender);
-        /// @dev need to check/handle these return values?
-        msgReceipt;
-        oftReceipt;
-        /// Refund excess eth
-        (bool s,) = address(msg.sender).call{value: msg.value - fee.nativeFee}("");
-        require(s);
+        /// Bridge USDX
+        l1USDX.approve(address(standardBridge), bridgeAmount);
+        standardBridge.depositERC20To(address(l1USDX), l2USDX, _to, bridgeAmount, gasLimit, "");
         /// @dev some check to ensure tokens are sent in case of soft-revert at the bridge
         emit BridgeDeposit(_stablecoin, _amount, _to);
     }
@@ -174,11 +164,14 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         return (_amount * 10 ** usdxDecimals) / (10 ** depositDecimals);
     }
 
-    /// @notice Converts an Ethereum address to a bytes32 representation.
-    /// @param  _addr The Ethereum address to convert.
-    /// @return bytes32 The bytes32 representation of the address.
-    /// @dev    This function truncates the address to its lower 20 bytes and right-aligns it within the bytes32.
-    function addressToBytes32(address _addr) internal pure returns (bytes32) {
-        return bytes32(uint256(uint160(_addr)));
-    }
+/// @notice An interface which extends the IERC20 to include a decimals view function.
+/// @dev    Any allow-listed stablecoin added to the bridge must conform to this interface.
+interface IERC20Decimals is IERC20 {
+    function decimals() external view returns (uint8);
+}
+
+/// @notice An interface which extends the IERC20Decimals to include a mint function to allow for minting
+///         of new USDX tokens by this bridge.
+interface IUSDX is IERC20Decimals {
+    function mint(address to, uint256 amount) external;
 }
