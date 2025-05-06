@@ -110,7 +110,7 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         uint256 _amount, 
         address _to,
         bytes calldata _extraData
-    ) external payable nonReentrant {
+    ) external nonReentrant {
         /// Checks
         require(allowlisted[_stablecoin], "USDX Bridge: Stablecoin not accepted.");
         require(_amount > 0, "USDX Bridge: May not bridge nothing.");
