@@ -8,9 +8,9 @@ import {
     SendParam, OFTReceipt, MessagingReceipt, MessagingFee
 } from "@layerzero/oapp/contracts/oft/interfaces/IOFT.sol";
 import {MessagingFee} from "@layerzero/oapp/contracts/oapp/OApp.sol";
-import {OptionsBuilder} from "@layerzero/oapp/contracts/oapp/libs/OptionsBuilder.sol";
 import {IERC20Decimals} from "src/L1/interfaces/IERC20Decimals.sol";
 import {IUSDX} from "src/L1/interfaces/IUSDX.sol";
+import { IL1StandardBridge } from "src/L1/interfaces/IL1StandardBridge.sol";
 
 /// @title  USDX Bridge
 /// @notice This contract provides bridging functionality for allow-listed stablecoins to the Ozean Layer L2.
@@ -21,13 +21,13 @@ import {IUSDX} from "src/L1/interfaces/IUSDX.sol";
 /// @dev    !!! NEEDS AN AUDIT !!!
 contract USDXBridge is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20Decimals;
-    using OptionsBuilder for bytes;
+    
+    IL1StandardBridge public immutable standardBridge;
 
     /// @notice The address of the USDX contract on mainnet.
     IUSDX public immutable l1USDX;
 
-    /// @notice The EID of the Ozean L2.
-    uint32 public immutable eid;
+    address public immutable l2USDX;
 
     /// @notice Addresses of allow-listed stablecoins.
     /// @dev    stablecoin => allowlisted
@@ -40,6 +40,9 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     /// @notice The total amount of USDX bridged via this contract per deposted stablecoin.
     /// @dev    stablecoin => amount
     mapping(address => uint256) public totalBridged;
+
+    /// @notice The gas limit passed to the Optimism portal when depositing USDX.
+    uint32 public gasLimit;
 
     /// EVENTS ///
 
@@ -163,15 +166,4 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         uint8 usdxDecimals = l1USDX.decimals();
         return (_amount * 10 ** usdxDecimals) / (10 ** depositDecimals);
     }
-
-/// @notice An interface which extends the IERC20 to include a decimals view function.
-/// @dev    Any allow-listed stablecoin added to the bridge must conform to this interface.
-interface IERC20Decimals is IERC20 {
-    function decimals() external view returns (uint8);
-}
-
-/// @notice An interface which extends the IERC20Decimals to include a mint function to allow for minting
-///         of new USDX tokens by this bridge.
-interface IUSDX is IERC20Decimals {
-    function mint(address to, uint256 amount) external;
 }
