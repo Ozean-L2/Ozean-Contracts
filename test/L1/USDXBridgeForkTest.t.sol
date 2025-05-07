@@ -9,7 +9,7 @@ import {USDXBridgeDeploy, USDXBridge} from "script/L1/USDXBridgeDeploy.s.sol";
 /// @dev forge test --match-contract USDXBridgeForkMainetTest
 contract USDXBridgeForkMainetTest is TestSetup {
     /// USDXBridge
-    event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _to);
+    event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _from, address indexed _to);
     event WithdrawCoins(address indexed _coin, uint256 _amount, address indexed _to);
     event AllowlistSet(address indexed _coin, bool _set);
     event DepositCapSet(address indexed _coin, uint256 _newDepositCap);
@@ -176,7 +176,7 @@ contract USDXBridgeForkMainetTest is TestSetup {
 
         /// Bridge
         vm.expectEmit(true, true, true, true);
-        emit USDXBridge.BridgeDeposit(address(usdc), _amount, alice);
+        emit USDXBridge.BridgeDeposit(address(usdc), _amount, alice, alice);
         usdxBridge.bridge{value: 0.01 ether}(address(usdc), _amount, alice);
 
         assertEq(usdxBridge.totalBridged(address(usdc)), usdxAmount);
@@ -190,7 +190,7 @@ contract USDXBridgeForkMainetTest is TestSetup {
 
         /// Bridge
         vm.expectEmit(true, true, true, true);
-        emit USDXBridge.BridgeDeposit(address(usdt), _amount, alice);
+        emit USDXBridge.BridgeDeposit(address(usdt), _amount, alice, alice);
         usdxBridge.bridge{value: 0.01 ether}(address(usdt), _amount, alice);
 
         assertEq(usdxBridge.totalBridged(address(usdt)), usdxAmount);
@@ -203,7 +203,7 @@ contract USDXBridgeForkMainetTest is TestSetup {
 
         /// Bridge
         vm.expectEmit(true, true, true, true);
-        emit USDXBridge.BridgeDeposit(address(dai), _amount, alice);
+        emit USDXBridge.BridgeDeposit(address(dai), _amount, alice, alice);
         usdxBridge.bridge{value: 0.01 ether}(address(dai), _amount, alice);
 
         assertEq(usdxBridge.totalBridged(address(dai)), _amount);

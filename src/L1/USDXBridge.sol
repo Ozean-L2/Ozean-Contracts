@@ -47,7 +47,7 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     /// EVENTS ///
 
     /// @notice An event emitted when a bridge deposit is made by a user.
-    event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _to);
+    event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _from, address indexed _to);
 
     /// @notice An event emitted when an ERC20 token is withdrawn from this contract.
     event WithdrawCoins(address indexed _coin, uint256 _amount, address indexed _to);
@@ -133,7 +133,7 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         l1USDX.approve(address(standardBridge), bridgeAmount);
         standardBridge.depositERC20To(address(l1USDX), l2USDX, _to, bridgeAmount, gasLimit, _extraData);
         /// @dev some check to ensure tokens are sent in case of soft-revert at the bridge
-        emit BridgeDeposit(_stablecoin, _amount, _to);
+        emit BridgeDeposit(_stablecoin, _amount, msg.sender, _to);
     }
 
     /// OWNER ///
