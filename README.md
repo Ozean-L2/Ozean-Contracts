@@ -44,7 +44,7 @@ Testnet tokens can be minted for free from the [Aave Faucet](https://app.aave.co
 | **USDX (Basic ERC20)** | [0x43bd82D1e29a1bEC03AfD11D5a3252779b8c760c](https://sepolia.etherscan.io/token/0x43bd82d1e29a1bec03afd11d5a3252779b8c760c#code)|
 | **USDX (Hex Trust L0 Path)** | [0x5DB6dA53eF70870f20d3E90Fa7c518A95C4B1563](https://sepolia.etherscan.io/address/0x5DB6dA53eF70870f20d3E90Fa7c518A95C4B1563)|
 | **USDX Bridge Alt (L0 Flare Path)** | [0x14D72e0C6f6b1117CfBF6a66C79158c8d6a18bC7](https://eth-sepolia.blockscout.com/address/0x14D72e0C6f6b1117CfBF6a66C79158c8d6a18bC7)|
-| **USDX Bridge (OP Standard Bridge Path)** | [0x6Fbd0016A8e43e34890A1322C1934D5D7D45f0E1](https://sepolia.etherscan.io/address/0x6fbd0016a8e43e34890a1322c1934d5d7d45f0e1#writeContract)|
+| **USDX Bridge (OP Standard Bridge Path)** | [0x850964Bc9C2D10510BD62b8d325d0888e78391C1](https://sepolia.etherscan.io/address/0x850964Bc9C2D10510BD62b8d325d0888e78391C1#writeContract)|
 | **LGE Staking** | [0xBAFAAfC8E2d8F6Ebf9Fa49646C36D640B4e07203](https://sepolia.etherscan.io/address/0xBAFAAfC8E2d8F6Ebf9Fa49646C36D640B4e07203#code)|
 
 ## Layer Two Deployments
