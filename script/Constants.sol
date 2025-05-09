@@ -9,7 +9,7 @@ contract Constants {
     uint32 public constant EID = 30295;
     uint32 public constant TESTNET_EID = 40294;
 
-    address public constant L1_MAINNET_STANDARD_BRIDGE = address(420);
+    address public constant L1_MAINNET_STANDARD_BRIDGE = 0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1;
     address public constant L1_MAINNET_LIDO_BRIDGE = address(420);
     address public constant L1_MAINNET_USDX_BRIDGE = address(420);
     address public constant L1_MAINNET_LGE_STAKING = 0xdD4297dECCE33fdA78dB8330832b51F3df610db9;
@@ -29,9 +29,9 @@ contract Constants {
     address public constant L1_SEPOLIA_DAI = 0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357;
     address public constant L1_SEPOLIA_WSTETH = 0xB82381A3fBD3FaFA77B3a7bE693342618240067b;
     address public constant L1_SEPOLIA_WETH = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;
-    address public constant L1_SEPOLIA_USDX = 0x5DB6dA53eF70870f20d3E90Fa7c518A95C4B1563;
+    address public constant L1_SEPOLIA_USDX = 0x43bd82D1e29a1bEC03AfD11D5a3252779b8c760c;
     address public constant L2_SEPOLIA_USDX = 0xe29f6fbc4CB3F01e2D38F0Aab7D8861285EE9C36;
-    address public constant L2_SEPOLIA_OZUSD = address(69);
+    address public constant L2_SEPOLIA_OZUSD = 0x743af9531E0f9944E42C2a74D9C65514925d6830;
 
     /// LGE STAKING ///
 
@@ -142,15 +142,15 @@ contract Constants {
         /// Tokens: USDC, USDT,  DAI
         /// Caps  : 1e30, 1e30, 1e30
         /// Functionally unlimited, no need to normalise for decimals unless lowered.
-        L1_MAINNET_BRIDGE_TOKENS = new address[](3);
+        L1_MAINNET_BRIDGE_TOKENS = new address[](1);
         L1_MAINNET_BRIDGE_TOKENS[0] = L1_MAINNET_USDC;
-        L1_MAINNET_BRIDGE_TOKENS[1] = L1_MAINNET_USDT;
-        L1_MAINNET_BRIDGE_TOKENS[2] = L1_MAINNET_DAI;
+        // L1_MAINNET_BRIDGE_TOKENS[1] = L1_MAINNET_USDT;
+        // L1_MAINNET_BRIDGE_TOKENS[2] = L1_MAINNET_DAI;
 
-        L1_MAINNET_BRIDGE_CAPS = new uint256[](3);
+        L1_MAINNET_BRIDGE_CAPS = new uint256[](1);
         L1_MAINNET_BRIDGE_CAPS[0] = 1000000000000000000000000000000;
-        L1_MAINNET_BRIDGE_CAPS[1] = 1000000000000000000000000000000;
-        L1_MAINNET_BRIDGE_CAPS[2] = 1000000000000000000000000000000;
+        // L1_MAINNET_BRIDGE_CAPS[1] = 1000000000000000000000000000000;
+        // L1_MAINNET_BRIDGE_CAPS[2] = 1000000000000000000000000000000;
     }
 
     function _getSepoliaUSDXBridgeArrays()
@@ -158,14 +158,14 @@ contract Constants {
         pure
         returns (address[] memory L1_SEPOLIA_BRIDGE_TOKENS, uint256[] memory L1_SEPOLIA_BRIDGE_CAPS)
     {
-        L1_SEPOLIA_BRIDGE_TOKENS = new address[](3);
+        L1_SEPOLIA_BRIDGE_TOKENS = new address[](1);
         L1_SEPOLIA_BRIDGE_TOKENS[0] = L1_SEPOLIA_USDC;
-        L1_SEPOLIA_BRIDGE_TOKENS[1] = L1_SEPOLIA_USDT;
-        L1_SEPOLIA_BRIDGE_TOKENS[2] = L1_SEPOLIA_DAI;
+        // L1_SEPOLIA_BRIDGE_TOKENS[1] = L1_SEPOLIA_USDT;
+        // L1_SEPOLIA_BRIDGE_TOKENS[2] = L1_SEPOLIA_DAI;
 
-        L1_SEPOLIA_BRIDGE_CAPS = new uint256[](3);
+        L1_SEPOLIA_BRIDGE_CAPS = new uint256[](1);
         L1_SEPOLIA_BRIDGE_CAPS[0] = 1000000000000000000000000000000;
-        L1_SEPOLIA_BRIDGE_CAPS[1] = 1000000000000000000000000000000;
-        L1_SEPOLIA_BRIDGE_CAPS[2] = 1000000000000000000000000000000;
+        // L1_SEPOLIA_BRIDGE_CAPS[1] = 1000000000000000000000000000000;
+        // L1_SEPOLIA_BRIDGE_CAPS[2] = 1000000000000000000000000000000;
     }
 }

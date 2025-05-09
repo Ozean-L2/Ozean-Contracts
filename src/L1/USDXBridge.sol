@@ -8,9 +8,9 @@ import {
     SendParam, OFTReceipt, MessagingReceipt, MessagingFee
 } from "@layerzero/oapp/contracts/oft/interfaces/IOFT.sol";
 import {MessagingFee} from "@layerzero/oapp/contracts/oapp/OApp.sol";
-import {OptionsBuilder} from "@layerzero/oapp/contracts/oapp/libs/OptionsBuilder.sol";
 import {IERC20Decimals} from "src/L1/interfaces/IERC20Decimals.sol";
 import {IUSDX} from "src/L1/interfaces/IUSDX.sol";
+import { IL1StandardBridge } from "src/L1/interfaces/IL1StandardBridge.sol";
 
 /// @title  USDX Bridge
 /// @notice This contract provides bridging functionality for allow-listed stablecoins to the Ozean Layer L2.
@@ -21,13 +21,13 @@ import {IUSDX} from "src/L1/interfaces/IUSDX.sol";
 /// @dev    !!! NEEDS AN AUDIT !!!
 contract USDXBridge is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20Decimals;
-    using OptionsBuilder for bytes;
+    
+    IL1StandardBridge public immutable standardBridge;
 
     /// @notice The address of the USDX contract on mainnet.
     IUSDX public immutable l1USDX;
 
-    /// @notice The EID of the Ozean L2.
-    uint32 public immutable eid;
+    address public immutable l2USDX;
 
     /// @notice Addresses of allow-listed stablecoins.
     /// @dev    stablecoin => allowlisted
@@ -41,10 +41,13 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     /// @dev    stablecoin => amount
     mapping(address => uint256) public totalBridged;
 
+    /// @notice The gas limit passed to the Optimism portal when depositing USDX.
+    uint32 public gasLimit;
+
     /// EVENTS ///
 
     /// @notice An event emitted when a bridge deposit is made by a user.
-    event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _to);
+    event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _from, address indexed _to);
 
     /// @notice An event emitted when an ERC20 token is withdrawn from this contract.
     event WithdrawCoins(address indexed _coin, uint256 _amount, address indexed _to);
@@ -61,7 +64,8 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     /// @notice The constructor contract set up.
     /// @param  _owner The address granted ownership rights to this contract.
     /// @param  _l1USDX The address for the USDX token on Ethereum mainnet.
-    /// @param  _eid The endpoint id for the Layer Zero transfer.
+    /// @param  _l2USDX The address for the USDX token on Ozean mainnet.
+    /// @param  _standardBridge The address of the standard bridge contract.
     /// @param  _stablecoins An array of allow-listed stablecoins that can be used to mint and bridge USDX.
     /// @param  _depositCaps The deposit caps per stablecoin for this contract, which limits the total amount bridged.
     /// @dev    Ensure that the index for each deposit cap aligns with the index of the stablecoin that is allowlisted.
@@ -70,13 +74,16 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     constructor(
         address _owner,
         address _l1USDX,
-        uint32 _eid,
+        address _l2USDX,
+        address _standardBridge,
         address[] memory _stablecoins,
         uint256[] memory _depositCaps
     ) {
         _transferOwnership(_owner);
         l1USDX = IUSDX(_l1USDX);
-        eid = _eid;
+        l2USDX = _l2USDX;
+        standardBridge = IL1StandardBridge(_standardBridge);
+        gasLimit = 21000;
         uint256 length = _stablecoins.length;
         require(
             length == _depositCaps.length,
@@ -97,7 +104,13 @@ contract USDXBridge is Ownable, ReentrancyGuard {
     /// @param  _stablecoin Depositing stablecoin address.
     /// @param  _amount The amount of deposit stablecoin to be swapped for USDX.
     /// @param  _to Recieving address on L2.
-    function bridge(address _stablecoin, uint256 _amount, address _to) external payable nonReentrant {
+    /// @param  _extraData Optional data to forward to L2.
+    function bridge(
+        address _stablecoin, 
+        uint256 _amount, 
+        address _to,
+        bytes calldata _extraData
+    ) external nonReentrant {
         /// Checks
         require(allowlisted[_stablecoin], "USDX Bridge: Stablecoin not accepted.");
         require(_amount > 0, "USDX Bridge: May not bridge nothing.");
@@ -116,22 +129,11 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         totalBridged[_stablecoin] += bridgeAmount;
         /// Mint USDX
         l1USDX.mint(address(this), bridgeAmount);
-        /// Bridge USDX via LZ
-        bytes memory extraOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(65000, 0);
-        SendParam memory sendParam =
-            SendParam(eid, addressToBytes32(_to), bridgeAmount, bridgeAmount, extraOptions, "", "");
-        MessagingFee memory fee = l1USDX.quoteSend(sendParam, false);
-        require(msg.value > fee.nativeFee, "USDX Bridge: Layer Zero fee.");
-        (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt) =
-            l1USDX.send{value: fee.nativeFee}(sendParam, fee, msg.sender);
-        /// @dev need to check/handle these return values?
-        msgReceipt;
-        oftReceipt;
-        /// Refund excess eth
-        (bool s,) = address(msg.sender).call{value: msg.value - fee.nativeFee}("");
-        require(s);
+        /// Bridge USDX
+        l1USDX.approve(address(standardBridge), bridgeAmount);
+        standardBridge.depositERC20To(address(l1USDX), l2USDX, _to, bridgeAmount, gasLimit, _extraData);
         /// @dev some check to ensure tokens are sent in case of soft-revert at the bridge
-        emit BridgeDeposit(_stablecoin, _amount, _to);
+        emit BridgeDeposit(_stablecoin, _amount, msg.sender, _to);
     }
 
     /// OWNER ///
@@ -172,13 +174,5 @@ contract USDXBridge is Ownable, ReentrancyGuard {
         uint8 depositDecimals = IERC20Decimals(_stablecoin).decimals();
         uint8 usdxDecimals = l1USDX.decimals();
         return (_amount * 10 ** usdxDecimals) / (10 ** depositDecimals);
-    }
-
-    /// @notice Converts an Ethereum address to a bytes32 representation.
-    /// @param  _addr The Ethereum address to convert.
-    /// @return bytes32 The bytes32 representation of the address.
-    /// @dev    This function truncates the address to its lower 20 bytes and right-aligns it within the bytes32.
-    function addressToBytes32(address _addr) internal pure returns (bytes32) {
-        return bytes32(uint256(uint160(_addr)));
     }
 }
