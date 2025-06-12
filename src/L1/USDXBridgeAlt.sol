@@ -114,8 +114,8 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
             "USDX Bridge: Fee-on-transfer tokens not supported."
         );
         totalBridged[_stablecoin] += bridgeAmount;
-        /// Mint USDX
-        //l1USDX.mint(address(this), bridgeAmount);
+        // Mint USDX
+        l1USDX.mint(address(this), bridgeAmount);
         /// Bridge USDX via LZ
         bytes memory extraOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(65000, 0);
         SendParam memory sendParam =
