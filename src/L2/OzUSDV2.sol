@@ -37,7 +37,7 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
 
     /// OVERRIDES ///
 
-    /// @dev See {IERC4262-deposit}.
+    /// @dev See {IERC4626-deposit}.
     function deposit(uint256 assets, address receiver)
         public
         override
@@ -48,7 +48,7 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
         shares = super.deposit(assets, receiver);
     }
 
-    /// @dev See {IERC4262-mint}.
+    /// @dev See {IERC4626-mint}.
     function mint(uint256 shares, address receiver)
         public
         override
@@ -59,18 +59,18 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
         assets = super.mint(shares, receiver);
     }
 
-    /// @dev See {IERC4262-totalAssets}.
+    /// @dev See {IERC4626-totalAssets}.
     function totalAssets() public view override returns (uint256) {
         return totalDeposited;
     }
 
-    /// @dev See {IERC4262-_deposit}.
+    /// @dev See {IERC4626-_deposit}.
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
         super._deposit(caller, receiver, assets, shares);
         totalDeposited += assets;
     }
 
-    /// @dev See {IERC4262-_withdraw}.
+    /// @dev See {IERC4626-_withdraw}.
     function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
         internal
         override

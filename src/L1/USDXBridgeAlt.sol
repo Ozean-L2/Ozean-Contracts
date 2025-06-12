@@ -14,8 +14,8 @@ import {IUSDX} from "src/L1/interfaces/IUSDX.sol";
 
 /// @title  USDX Bridge Alt
 /// @notice This contract provides bridging functionality for allow-listed stablecoins to the Ozean Layer L2.
-///         Users can deposit any allow-listed stablecoin and recieve USDX, the native gas token for Ozean, on
-///         the L2 via the Optimism Portal contract. The owner of this contract can modify the set of
+///         Users can deposit any allow-listed stablecoin and receive USDX, the native gas token for Ozean, on
+///         the L2 via the LayerZeroV2. The owner of this contract can modify the set of
 ///         allow-listed stablecoins accepted, along with the deposit caps, and can also withdraw any deposited
 ///         ERC20 tokens.
 /// @dev    !!! USED TO TEST LAYER ZERO BRIDGING - NOT FOR MAINNET - NEEDS AN AUDIT !!!
@@ -33,11 +33,11 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @dev    stablecoin => allowlisted
     mapping(address => bool) public allowlisted;
 
-    /// @notice The limit to the total USDX supply that can be minted and bridged per deposted stablecoin.
+    /// @notice The limit to the total USDX supply that can be minted and bridged per deposited stablecoin.
     /// @dev    stablecoin => amount
     mapping(address => uint256) public depositCap;
 
-    /// @notice The total amount of USDX bridged via this contract per deposted stablecoin.
+    /// @notice The total amount of USDX bridged via this contract per deposited stablecoin.
     /// @dev    stablecoin => amount
     mapping(address => uint256) public totalBridged;
 
@@ -49,7 +49,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @notice An event emitted when an ERC20 token is withdrawn from this contract.
     event WithdrawCoins(address indexed _coin, uint256 _amount, address indexed _to);
 
-    /// @notice An event emitted when en ERC20 stablecoin is set as allowlisted or not (true if allowlisted, false if
+    /// @notice An event emitted when an ERC20 stablecoin is set as allowlisted or not (true if allowlisted, false if
     /// removed).
     event AllowlistSet(address indexed _coin, bool _set);
 
@@ -96,7 +96,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @notice This function allows users to deposit any allow-listed stablecoin to the Ozean Layer L2.
     /// @param  _stablecoin Depositing stablecoin address.
     /// @param  _amount The amount of deposit stablecoin to be swapped for USDX.
-    /// @param  _to Recieving address on L2.
+    /// @param  _to Receiving address on L2.
     function bridge(address _stablecoin, uint256 _amount, address _to) external payable nonReentrant {
         /// Checks
         require(allowlisted[_stablecoin], "USDX Bridge: Stablecoin not accepted.");
