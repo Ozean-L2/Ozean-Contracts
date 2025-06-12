@@ -101,6 +101,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
         /// Checks
         require(allowlisted[_stablecoin], "USDX Bridge: Stablecoin not accepted.");
         require(_amount > 0, "USDX Bridge: May not bridge nothing.");
+        require(_to != address(0), "USDX Bridge: Cannot bridge to the zero address.");
         uint256 bridgeAmount = _getBridgeAmount(_stablecoin, _amount);
         require(
             totalBridged[_stablecoin] + bridgeAmount <= depositCap[_stablecoin],

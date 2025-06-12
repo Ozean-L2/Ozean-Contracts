@@ -107,6 +107,9 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
 
         vm.expectRevert("USDX Bridge: Fee-on-transfer tokens not supported.");
         usdxBridgeAlt.bridge(address(feeOnTransfer), 1 ether, hexTrust);
+
+        vm.expectRevert("USDX Bridge: Cannot bridge to the zero address.");
+        usdxBridgeAlt.bridge(address(feeOnTransfer), 1 ether, address(0));
     }
 
     function testBridgeUSDXWithUSDC() public prank(alice) {
