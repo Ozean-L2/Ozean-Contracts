@@ -38,25 +38,25 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
     /// OVERRIDES ///
 
     /// @dev See {IERC4626-deposit}.
-    function deposit(uint256 assets, address receiver)
+    function deposit(uint256 _assets, address _receiver)
         public
         override
         nonReentrant
         whenNotPaused
         returns (uint256 shares)
     {
-        shares = super.deposit(assets, receiver);
+        shares = super.deposit(_assets, _receiver);
     }
 
     /// @dev See {IERC4626-mint}.
-    function mint(uint256 shares, address receiver)
+    function mint(uint256 _shares, address _receiver)
         public
         override
         nonReentrant
         whenNotPaused
         returns (uint256 assets)
     {
-        assets = super.mint(shares, receiver);
+        assets = super.mint(_shares, _receiver);
     }
 
     /// @dev See {IERC4626-totalAssets}.
@@ -65,18 +65,18 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
     }
 
     /// @dev See {IERC4626-_deposit}.
-    function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
-        super._deposit(caller, receiver, assets, shares);
-        totalDeposited += assets;
+    function _deposit(address _caller, address _receiver, uint256 _assets, uint256 _shares) internal override {
+        super._deposit(_caller, _receiver, _assets, _shares);
+        totalDeposited += _assets;
     }
 
     /// @dev See {IERC4626-_withdraw}.
-    function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
+    function _withdraw(address _caller, address _receiver, address _owner, uint256 _assets, uint256 _shares)
         internal
         override
     {
-        super._withdraw(caller, receiver, owner, assets, shares);
-        totalDeposited -= assets;
+        super._withdraw(_caller, _receiver, _owner, _assets, _shares);
+        totalDeposited -= _assets;
     }
 
     /// OWNER ///
