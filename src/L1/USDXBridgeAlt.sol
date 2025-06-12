@@ -123,11 +123,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
             SendParam(eid, addressToBytes32(_to), bridgeAmount, bridgeAmount, extraOptions, "", "");
         MessagingFee memory fee = l1USDX.quoteSend(sendParam, false);
         require(msg.value > fee.nativeFee, "USDX Bridge: Layer Zero fee.");
-        (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt) =
-            l1USDX.send{value: fee.nativeFee}(sendParam, fee, msg.sender);
-        /// @dev need to check/handle these return values?
-        msgReceipt;
-        oftReceipt;
+        l1USDX.send{value: fee.nativeFee}(sendParam, fee, msg.sender);
         /// Refund excess eth
         (bool s,) = address(msg.sender).call{value: msg.value - fee.nativeFee}("");
         require(s);
