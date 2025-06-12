@@ -19,6 +19,15 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
 
         /// Alt bridge seeded
         deal(address(usdx), address(usdxBridgeAlt), 100e18);
+        _distributeMainnetTokens(alice);
+
+        vm.startPrank(hexTrust);
+        usdxBridgeAlt.setAllowlist(address(usdt), true);
+        usdxBridgeAlt.setAllowlist(address(dai), true);
+
+        usdxBridgeAlt.setDepositCap(address(usdt), 1e30);
+        usdxBridgeAlt.setDepositCap(address(dai), 1e30);
+        vm.stopPrank();
     }
 
     /// SETUP ///
@@ -130,7 +139,7 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
 
     function testBridgeUSDXWithDAI() public prank(alice) {
         /// Mint and approve
-        uint256 _amount = 100e18;
+        uint256 _amount = 1e18;
         dai.approve(address(usdxBridgeAlt), _amount);
 
         /// Bridge
@@ -190,7 +199,7 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
 
     function testWithdrawERC20() public prank(alice) {
         /// Send some tokens directly to the contract
-        uint256 _amount = 100e18;
+        uint256 _amount = 1e18;
         dai.transfer(address(usdxBridgeAlt), _amount);
         uint256 balanceBefore = dai.balanceOf(address(usdxBridgeAlt));
 
