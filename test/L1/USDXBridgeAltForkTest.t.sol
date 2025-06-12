@@ -118,12 +118,25 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         usdc.approve(address(usdxBridgeAlt), _amount);
         uint256 usdxAmount = _amount * (10 ** 12);
 
+        uint256 aliceBalanceBefore = address(alice).balance;
+        uint256 bridgeBalanceBefore = address(usdxBridgeAlt).balance;
+
         /// Bridge
         vm.expectEmit(true, true, true, true);
         emit USDXBridgeAlt.BridgeDeposit(address(usdc), _amount, alice);
         usdxBridgeAlt.bridge{value: 0.01 ether}(address(usdc), _amount, alice);
 
         assertEq(usdxBridgeAlt.totalBridged(address(usdc)), usdxAmount);
+
+        uint256 aliceBalanceAfter = address(alice).balance;
+        uint256 bridgeBalanceAfter = address(usdxBridgeAlt).balance;
+
+        // Check Alice's balance decreased (paid for the bridge fee)
+        assertLt(aliceBalanceAfter, aliceBalanceBefore);
+
+        // Check bridge contract's ETH balance remains zero (assumes it forwarded all ETH or refunded)
+        assertEq(bridgeBalanceBefore, 0);
+        assertEq(bridgeBalanceAfter, 0);
     }
 
     function testBridgeUSDXWithUSDT() public prank(alice) {
