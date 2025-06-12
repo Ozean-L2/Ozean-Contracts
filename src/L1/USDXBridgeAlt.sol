@@ -153,6 +153,17 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
         emit DepositCapSet(_stablecoin, _newDepositCap);
     }
 
+    /// @notice This function allows the owner to withdraw ETH held by this contract.
+    /// @param  _amount The amount of ETH to withdraw.
+    /// @param  _to The address to receive the withdrawn ETH.
+    function withdrawETH(uint256 _amount, address _to) external onlyOwner {
+        require(_to != address(0), "USDX Bridge: Cannot withdraw to the zero address.");
+        require(_amount <= address(this).balance, "USDX Bridge: Insufficient ETH balance.");
+        (bool success, ) = _to.call{value: _amount}("");
+        require(success, "USDX Bridge: ETH transfer failed.");
+        emit WithdrawCoins(address(0), _amount, _to);
+    }
+
     /// @notice This function allows the owner to withdraw any ERC20 token held by this contract.
     /// @param  _coin The address of the ERC20 token to withdraw.
     /// @param  _amount The amount of tokens to withdraw.

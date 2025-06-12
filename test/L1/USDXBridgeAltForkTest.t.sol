@@ -213,6 +213,35 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         assertEq(usdxBridgeAlt.depositCap(address(usdc)), _newCap);
     }
 
+    function testWithdrawETH() public prank(alice) {
+        // Send some ETH directly to the contract
+        uint256 _amount = 1 ether;
+        vm.deal(address(usdxBridgeAlt), _amount);
+        uint256 balanceBefore = address(usdxBridgeAlt).balance;
+
+        // Try withdrawing as non-owner
+        vm.expectRevert("Ownable: caller is not the owner");
+        usdxBridgeAlt.withdrawETH(_amount, alice);
+
+        vm.stopPrank();
+
+        // Owner should be allowed to withdraw
+        vm.startPrank(hexTrust);
+
+        address recipient = hexTrust;
+        uint256 recipientBalanceBefore = recipient.balance;
+
+        vm.expectEmit(true, true, true, true);
+        emit USDXBridgeAlt.WithdrawCoins(address(0), _amount, recipient);
+        usdxBridgeAlt.withdrawETH(_amount, recipient);
+
+        // Check balances after withdrawal
+        assertEq(address(usdxBridgeAlt).balance, balanceBefore - _amount);
+        assertEq(recipient.balance, recipientBalanceBefore + _amount);
+
+        vm.stopPrank();
+    }
+
     function testWithdrawERC20() public prank(alice) {
         /// Send some tokens directly to the contract
         uint256 _amount = 1e18;
