@@ -157,6 +157,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @param  _amount The amount of ETH to withdraw.
     /// @param  _to The address to receive the withdrawn ETH.
     function withdrawETH(uint256 _amount, address _to) external onlyOwner {
+        require(_amount > 0, "USDX Bridge: Cannot withdraw zero.");
         require(_to != address(0), "USDX Bridge: Cannot withdraw to the zero address.");
         require(_amount <= address(this).balance, "USDX Bridge: Insufficient ETH balance.");
         (bool success, ) = _to.call{value: _amount}("");
@@ -168,6 +169,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @param  _coin The address of the ERC20 token to withdraw.
     /// @param  _amount The amount of tokens to withdraw.
     function withdrawERC20(address _coin, uint256 _amount) external onlyOwner {
+        require(_amount > 0, "USDX Bridge: Cannot withdraw zero.");
         IERC20Decimals(_coin).safeTransfer(msg.sender, _amount);
         emit WithdrawCoins(_coin, _amount, msg.sender);
     }
