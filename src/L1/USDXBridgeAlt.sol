@@ -99,9 +99,9 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @param  _to Receiving address on L2.
     function bridge(address _stablecoin, uint256 _amount, address _to) external payable nonReentrant {
         /// Checks
-        require(allowlisted[_stablecoin], "USDX Bridge: Stablecoin not accepted.");
         require(_amount > 0, "USDX Bridge: May not bridge nothing.");
         require(_to != address(0), "USDX Bridge: Cannot bridge to the zero address.");
+        require(allowlisted[_stablecoin], "USDX Bridge: Stablecoin not accepted.");
         uint256 bridgeAmount = _getBridgeAmount(_stablecoin, _amount);
         require(
             totalBridged[_stablecoin] + bridgeAmount <= depositCap[_stablecoin],
