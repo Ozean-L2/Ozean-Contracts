@@ -37,7 +37,10 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
 
     /// OVERRIDES ///
 
-    /// @dev See {IERC4626-deposit}.
+    /// @notice Deposits USDX into the vault and mints ozUSD shares to the receiver.
+    /// @param _assets The amount of USDX to deposit.
+    /// @param _receiver The address receiving ozUSD shares.
+    /// @return shares The number of ozUSD shares minted.
     function deposit(uint256 _assets, address _receiver)
         public
         override
@@ -48,7 +51,10 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
         shares = super.deposit(_assets, _receiver);
     }
 
-    /// @dev See {IERC4626-mint}.
+    /// @notice Mints a specified amount of ozUSD shares by depositing the necessary amount of USDX.
+    /// @param _shares The amount of ozUSD shares to mint.
+    /// @param _receiver The address receiving the ozUSD shares.
+    /// @return assets The amount of USDX deposited.
     function mint(uint256 _shares, address _receiver)
         public
         override
@@ -60,17 +66,30 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
     }
 
     /// @dev See {IERC4626-totalAssets}.
+    /// @notice Returns the total amount of USDX deposited in the vault (excluding yield).
+    /// @return The total amount of assets deposited by users.
     function totalAssets() public view override returns (uint256) {
         return totalDeposited;
     }
 
     /// @dev See {IERC4626-_deposit}.
+    /// @notice Internal hook for handling deposit logic and updating totalDeposited.
+    /// @param _caller The address initiating the deposit.
+    /// @param _receiver The address receiving the ozUSD shares.
+    /// @param _assets The amount of USDX deposited.
+    /// @param _shares The number of ozUSD shares minted.
     function _deposit(address _caller, address _receiver, uint256 _assets, uint256 _shares) internal override {
         super._deposit(_caller, _receiver, _assets, _shares);
         totalDeposited += _assets;
     }
 
     /// @dev See {IERC4626-_withdraw}.
+    /// @notice Internal hook for handling withdrawal logic and updating totalDeposited.
+    /// @param _caller The address initiating the withdrawal.
+    /// @param _receiver The address receiving the USDX.
+    /// @param _owner The address that owns the ozUSD shares.
+    /// @param _assets The amount of USDX withdrawn.
+    /// @param _shares The number of ozUSD shares burned.
     function _withdraw(address _caller, address _receiver, address _owner, uint256 _assets, uint256 _shares)
         internal
         override
