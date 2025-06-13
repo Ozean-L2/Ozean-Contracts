@@ -46,8 +46,16 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @notice An event emitted when a bridge deposit is made by a user.
     event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _to);
 
-    /// @notice An event emitted when an ERC20 token is withdrawn from this contract.
-    event WithdrawCoins(address indexed _coin, uint256 _amount, address indexed _to);
+    /// @notice Emitted when ETH is withdrawn from the contract.
+    /// @param amount The amount of ETH withdrawn.
+    /// @param to The recipient address.
+    event WithdrawETH(uint256 amount, address indexed to);
+
+    /// @notice Emitted when an ERC20 token is withdrawn from the contract.
+    /// @param token The ERC20 token address.
+    /// @param amount The amount withdrawn.
+    /// @param to The recipient address.
+    event WithdrawERC20(address indexed token, uint256 amount, address indexed to);
 
     /// @notice An event emitted when an ERC20 stablecoin is set as allowlisted or not (true if allowlisted, false if
     /// removed).
@@ -162,7 +170,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
         require(_amount <= address(this).balance, "USDX Bridge: Insufficient ETH balance.");
         (bool success, ) = _to.call{value: _amount}("");
         require(success, "USDX Bridge: ETH transfer failed.");
-        emit WithdrawCoins(address(0), _amount, _to);
+        emit WithdrawETH(_amount, _to);
     }
 
     /// @notice This function allows the owner to withdraw any ERC20 token held by this contract.
@@ -171,7 +179,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     function withdrawERC20(address _coin, uint256 _amount) external onlyOwner {
         require(_amount > 0, "USDX Bridge: Cannot withdraw zero.");
         IERC20Decimals(_coin).safeTransfer(msg.sender, _amount);
-        emit WithdrawCoins(_coin, _amount, msg.sender);
+        emit WithdrawERC20(_coin, _amount, msg.sender);
     }
 
     /// VIEW ///

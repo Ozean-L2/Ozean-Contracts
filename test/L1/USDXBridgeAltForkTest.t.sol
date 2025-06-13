@@ -232,7 +232,7 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         uint256 recipientBalanceBefore = recipient.balance;
 
         vm.expectEmit(true, true, true, true);
-        emit USDXBridgeAlt.WithdrawCoins(address(0), _amount, recipient);
+        emit USDXBridgeAlt.WithdrawETH(_amount, recipient);
         usdxBridgeAlt.withdrawETH(_amount, recipient);
 
         // Check balances after withdrawal
@@ -257,7 +257,7 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         vm.startPrank(hexTrust);
 
         vm.expectEmit(true, true, true, true);
-        emit USDXBridgeAlt.WithdrawCoins(address(dai), _amount, hexTrust);
+        emit USDXBridgeAlt.WithdrawERC20(address(dai), _amount, hexTrust);
         usdxBridgeAlt.withdrawERC20(address(dai), _amount);
 
         assertEq(dai.balanceOf(address(usdxBridgeAlt)), balanceBefore - _amount);
@@ -277,7 +277,7 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         vm.startPrank(hexTrust);
 
         vm.expectEmit(true, true, true, true);
-        emit USDXBridgeAlt.WithdrawCoins(address(usdc), _amount, hexTrust);
+        emit USDXBridgeAlt.WithdrawERC20(address(usdc), _amount, hexTrust);
         usdxBridgeAlt.withdrawERC20(address(usdc), _amount);
 
         assertEq(usdc.balanceOf(hexTrust), _amount);
