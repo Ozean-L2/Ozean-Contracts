@@ -14,8 +14,8 @@ import {IUSDX} from "src/L1/interfaces/IUSDX.sol";
 
 /// @title  USDX Bridge Alt
 /// @notice This contract provides bridging functionality for allow-listed stablecoins to the Ozean Layer L2.
-///         Users can deposit any allow-listed stablecoin and recieve USDX, the native gas token for Ozean, on
-///         the L2 via the Optimism Portal contract. The owner of this contract can modify the set of
+///         Users can deposit any allow-listed stablecoin and receive USDX, the native gas token for Ozean, on
+///         the L2 via the LayerZeroV2. The owner of this contract can modify the set of
 ///         allow-listed stablecoins accepted, along with the deposit caps, and can also withdraw any deposited
 ///         ERC20 tokens.
 /// @dev    !!! USED TO TEST LAYER ZERO BRIDGING - NOT FOR MAINNET - NEEDS AN AUDIT !!!
@@ -33,11 +33,11 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @dev    stablecoin => allowlisted
     mapping(address => bool) public allowlisted;
 
-    /// @notice The limit to the total USDX supply that can be minted and bridged per deposted stablecoin.
+    /// @notice The limit to the total USDX supply that can be minted and bridged per deposited stablecoin.
     /// @dev    stablecoin => amount
     mapping(address => uint256) public depositCap;
 
-    /// @notice The total amount of USDX bridged via this contract per deposted stablecoin.
+    /// @notice The total amount of USDX bridged via this contract per deposited stablecoin.
     /// @dev    stablecoin => amount
     mapping(address => uint256) public totalBridged;
 
@@ -46,10 +46,18 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @notice An event emitted when a bridge deposit is made by a user.
     event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _to);
 
-    /// @notice An event emitted when an ERC20 token is withdrawn from this contract.
-    event WithdrawCoins(address indexed _coin, uint256 _amount, address indexed _to);
+    /// @notice Emitted when ETH is withdrawn from the contract.
+    /// @param amount The amount of ETH withdrawn.
+    /// @param to The recipient address.
+    event WithdrawETH(uint256 amount, address indexed to);
 
-    /// @notice An event emitted when en ERC20 stablecoin is set as allowlisted or not (true if allowlisted, false if
+    /// @notice Emitted when an ERC20 token is withdrawn from the contract.
+    /// @param token The ERC20 token address.
+    /// @param amount The amount withdrawn.
+    /// @param to The recipient address.
+    event WithdrawERC20(address indexed token, uint256 amount, address indexed to);
+
+    /// @notice An event emitted when an ERC20 stablecoin is set as allowlisted or not (true if allowlisted, false if
     /// removed).
     event AllowlistSet(address indexed _coin, bool _set);
 
@@ -96,11 +104,12 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @notice This function allows users to deposit any allow-listed stablecoin to the Ozean Layer L2.
     /// @param  _stablecoin Depositing stablecoin address.
     /// @param  _amount The amount of deposit stablecoin to be swapped for USDX.
-    /// @param  _to Recieving address on L2.
+    /// @param  _to Receiving address on L2.
     function bridge(address _stablecoin, uint256 _amount, address _to) external payable nonReentrant {
         /// Checks
-        require(allowlisted[_stablecoin], "USDX Bridge: Stablecoin not accepted.");
         require(_amount > 0, "USDX Bridge: May not bridge nothing.");
+        require(_to != address(0), "USDX Bridge: Cannot bridge to the zero address.");
+        require(allowlisted[_stablecoin], "USDX Bridge: Stablecoin not accepted.");
         uint256 bridgeAmount = _getBridgeAmount(_stablecoin, _amount);
         require(
             totalBridged[_stablecoin] + bridgeAmount <= depositCap[_stablecoin],
@@ -114,22 +123,21 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
             "USDX Bridge: Fee-on-transfer tokens not supported."
         );
         totalBridged[_stablecoin] += bridgeAmount;
-        /// Mint USDX
-        //l1USDX.mint(address(this), bridgeAmount);
+        // Mint USDX
+        l1USDX.mint(address(this), bridgeAmount);
         /// Bridge USDX via LZ
         bytes memory extraOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(65000, 0);
         SendParam memory sendParam =
             SendParam(eid, addressToBytes32(_to), bridgeAmount, bridgeAmount, extraOptions, "", "");
         MessagingFee memory fee = l1USDX.quoteSend(sendParam, false);
-        require(msg.value > fee.nativeFee, "USDX Bridge: Layer Zero fee.");
-        (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt) =
-            l1USDX.send{value: fee.nativeFee}(sendParam, fee, msg.sender);
-        /// @dev need to check/handle these return values?
-        msgReceipt;
-        oftReceipt;
-        /// Refund excess eth
-        (bool s,) = address(msg.sender).call{value: msg.value - fee.nativeFee}("");
-        require(s);
+        require(msg.value >= fee.nativeFee, "USDX Bridge: Layer Zero fee.");
+        l1USDX.send{value: fee.nativeFee}(sendParam, fee, msg.sender);
+        /// Refund excess eth if any
+        uint256 excessEth = msg.value - fee.nativeFee;
+        if (excessEth > 0) {
+            (bool success,) = address(msg.sender).call{value: excessEth}("");
+            require(success, "USDX Bridge: ETH refund failed.");
+        }
         /// @dev some check to ensure tokens are sent in case of soft-revert at the bridge
         emit BridgeDeposit(_stablecoin, _amount, _to);
     }
@@ -153,12 +161,25 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
         emit DepositCapSet(_stablecoin, _newDepositCap);
     }
 
+    /// @notice This function allows the owner to withdraw ETH held by this contract.
+    /// @param  _amount The amount of ETH to withdraw.
+    /// @param  _to The address to receive the withdrawn ETH.
+    function withdrawETH(uint256 _amount, address _to) external onlyOwner {
+        require(_amount > 0, "USDX Bridge: Cannot withdraw zero.");
+        require(_to != address(0), "USDX Bridge: Cannot withdraw to the zero address.");
+        require(_amount <= address(this).balance, "USDX Bridge: Insufficient ETH balance.");
+        (bool success, ) = _to.call{value: _amount}("");
+        require(success, "USDX Bridge: ETH transfer failed.");
+        emit WithdrawETH(_amount, _to);
+    }
+
     /// @notice This function allows the owner to withdraw any ERC20 token held by this contract.
     /// @param  _coin The address of the ERC20 token to withdraw.
     /// @param  _amount The amount of tokens to withdraw.
     function withdrawERC20(address _coin, uint256 _amount) external onlyOwner {
+        require(_amount > 0, "USDX Bridge: Cannot withdraw zero.");
         IERC20Decimals(_coin).safeTransfer(msg.sender, _amount);
-        emit WithdrawCoins(_coin, _amount, msg.sender);
+        emit WithdrawERC20(_coin, _amount, msg.sender);
     }
 
     /// VIEW ///

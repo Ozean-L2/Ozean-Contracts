@@ -19,6 +19,15 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
 
         /// Alt bridge seeded
         deal(address(usdx), address(usdxBridgeAlt), 100e18);
+        _distributeMainnetTokens(alice);
+
+        vm.startPrank(hexTrust);
+        usdxBridgeAlt.setAllowlist(address(usdt), true);
+        usdxBridgeAlt.setAllowlist(address(dai), true);
+
+        usdxBridgeAlt.setDepositCap(address(usdt), 1e30);
+        usdxBridgeAlt.setDepositCap(address(dai), 1e30);
+        vm.stopPrank();
     }
 
     /// SETUP ///
@@ -98,13 +107,22 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
 
         vm.expectRevert("USDX Bridge: Fee-on-transfer tokens not supported.");
         usdxBridgeAlt.bridge(address(feeOnTransfer), 1 ether, hexTrust);
+
+        vm.expectRevert("USDX Bridge: Cannot bridge to the zero address.");
+        usdxBridgeAlt.bridge(address(feeOnTransfer), 1 ether, address(0));
     }
 
     function testBridgeUSDXWithUSDC() public prank(alice) {
         /// Mint and approve
         uint256 _amount = 100e6;
         usdc.approve(address(usdxBridgeAlt), _amount);
+
+        // Assumes _amount is in a 6-decimal token (e.g., USDC) and USDX has 18 decimals.
+        // Converts to 18-decimal units by multiplying by 10^12 (18 - 6).
         uint256 usdxAmount = _amount * (10 ** 12);
+
+        uint256 aliceBalanceBefore = address(alice).balance;
+        uint256 bridgeBalanceBefore = address(usdxBridgeAlt).balance;
 
         /// Bridge
         vm.expectEmit(true, true, true, true);
@@ -112,12 +130,24 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         usdxBridgeAlt.bridge{value: 0.01 ether}(address(usdc), _amount, alice);
 
         assertEq(usdxBridgeAlt.totalBridged(address(usdc)), usdxAmount);
+
+        uint256 aliceBalanceAfter = address(alice).balance;
+        uint256 bridgeBalanceAfter = address(usdxBridgeAlt).balance;
+
+        // Check Alice's balance decreased (paid for the bridge fee)
+        assertLt(aliceBalanceAfter, aliceBalanceBefore);
+
+        // Check bridge contract's ETH balance remains zero (assumes it forwarded all ETH or refunded)
+        assertEq(bridgeBalanceBefore, 0);
+        assertEq(bridgeBalanceAfter, 0);
     }
 
     function testBridgeUSDXWithUSDT() public prank(alice) {
         /// Mint and approve
         uint256 _amount = 100e6;
         IERC20Alt(address(usdt)).approve(address(usdxBridgeAlt), _amount);
+        // Assumes _amount is in a 6-decimal token (e.g., USDT) and USDX has 18 decimals.
+        // Converts to 18-decimal units by multiplying by 10^12 (18 - 6).
         uint256 usdxAmount = _amount * (10 ** 12);
 
         /// Bridge
@@ -130,7 +160,7 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
 
     function testBridgeUSDXWithDAI() public prank(alice) {
         /// Mint and approve
-        uint256 _amount = 100e18;
+        uint256 _amount = 1e18;
         dai.approve(address(usdxBridgeAlt), _amount);
 
         /// Bridge
@@ -188,9 +218,38 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         assertEq(usdxBridgeAlt.depositCap(address(usdc)), _newCap);
     }
 
+    function testWithdrawETH() public prank(alice) {
+        // Send some ETH directly to the contract
+        uint256 _amount = 1 ether;
+        vm.deal(address(usdxBridgeAlt), _amount);
+        uint256 balanceBefore = address(usdxBridgeAlt).balance;
+
+        // Try withdrawing as non-owner
+        vm.expectRevert("Ownable: caller is not the owner");
+        usdxBridgeAlt.withdrawETH(_amount, alice);
+
+        vm.stopPrank();
+
+        // Owner should be allowed to withdraw
+        vm.startPrank(hexTrust);
+
+        address recipient = hexTrust;
+        uint256 recipientBalanceBefore = recipient.balance;
+
+        vm.expectEmit(true, true, true, true);
+        emit USDXBridgeAlt.WithdrawETH(_amount, recipient);
+        usdxBridgeAlt.withdrawETH(_amount, recipient);
+
+        // Check balances after withdrawal
+        assertEq(address(usdxBridgeAlt).balance, balanceBefore - _amount);
+        assertEq(recipient.balance, recipientBalanceBefore + _amount);
+
+        vm.stopPrank();
+    }
+
     function testWithdrawERC20() public prank(alice) {
         /// Send some tokens directly to the contract
-        uint256 _amount = 100e18;
+        uint256 _amount = 1e18;
         dai.transfer(address(usdxBridgeAlt), _amount);
         uint256 balanceBefore = dai.balanceOf(address(usdxBridgeAlt));
 
@@ -203,7 +262,7 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         vm.startPrank(hexTrust);
 
         vm.expectEmit(true, true, true, true);
-        emit USDXBridgeAlt.WithdrawCoins(address(dai), _amount, hexTrust);
+        emit USDXBridgeAlt.WithdrawERC20(address(dai), _amount, hexTrust);
         usdxBridgeAlt.withdrawERC20(address(dai), _amount);
 
         assertEq(dai.balanceOf(address(usdxBridgeAlt)), balanceBefore - _amount);
@@ -223,7 +282,7 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         vm.startPrank(hexTrust);
 
         vm.expectEmit(true, true, true, true);
-        emit USDXBridgeAlt.WithdrawCoins(address(usdc), _amount, hexTrust);
+        emit USDXBridgeAlt.WithdrawERC20(address(usdc), _amount, hexTrust);
         usdxBridgeAlt.withdrawERC20(address(usdc), _amount);
 
         assertEq(usdc.balanceOf(hexTrust), _amount);
