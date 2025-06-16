@@ -44,7 +44,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// EVENTS ///
 
     /// @notice An event emitted when a bridge deposit is made by a user.
-    event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _to);
+    event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _to, bytes32 _messageId);
 
     /// @notice Emitted when ETH is withdrawn from the contract.
     /// @param amount The amount of ETH withdrawn.
@@ -131,7 +131,8 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
             SendParam(eid, addressToBytes32(_to), bridgeAmount, bridgeAmount, extraOptions, "", "");
         MessagingFee memory fee = l1USDX.quoteSend(sendParam, false);
         require(msg.value >= fee.nativeFee, "USDX Bridge: Layer Zero fee.");
-        l1USDX.send{value: fee.nativeFee}(sendParam, fee, msg.sender);
+        (MessagingReceipt memory msgReceipt,) =
+                 l1USDX.send{value: fee.nativeFee}(sendParam, fee, msg.sender);
         /// Refund excess eth if any
         uint256 excessEth = msg.value - fee.nativeFee;
         if (excessEth > 0) {
@@ -139,7 +140,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
             require(success, "USDX Bridge: ETH refund failed.");
         }
         /// @dev some check to ensure tokens are sent in case of soft-revert at the bridge
-        emit BridgeDeposit(_stablecoin, _amount, _to);
+        emit BridgeDeposit(_stablecoin, _amount, _to, msgReceipt.guid);
     }
 
     /// OWNER ///
