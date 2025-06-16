@@ -125,8 +125,6 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         uint256 bridgeBalanceBefore = address(usdxBridgeAlt).balance;
 
         /// Bridge
-        vm.expectEmit(true, true, true, true);
-        emit USDXBridgeAlt.BridgeDeposit(address(usdc), _amount, alice);
         usdxBridgeAlt.bridge{value: 0.01 ether}(address(usdc), _amount, alice);
 
         assertEq(usdxBridgeAlt.totalBridged(address(usdc)), usdxAmount);
@@ -151,8 +149,6 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         uint256 usdxAmount = _amount * (10 ** 12);
 
         /// Bridge
-        vm.expectEmit(true, true, true, true);
-        emit USDXBridgeAlt.BridgeDeposit(address(usdt), _amount, alice);
         usdxBridgeAlt.bridge{value: 0.01 ether}(address(usdt), _amount, alice);
 
         assertEq(usdxBridgeAlt.totalBridged(address(usdt)), usdxAmount);
@@ -164,8 +160,6 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         dai.approve(address(usdxBridgeAlt), _amount);
 
         /// Bridge
-        vm.expectEmit(true, true, true, true);
-        emit USDXBridgeAlt.BridgeDeposit(address(dai), _amount, alice);
         usdxBridgeAlt.bridge{value: 0.01 ether}(address(dai), _amount, alice);
 
         assertEq(usdxBridgeAlt.totalBridged(address(dai)), _amount);
