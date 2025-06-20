@@ -66,8 +66,8 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
     }
 
     /// @dev See {IERC4626-totalAssets}.
-    /// @notice Returns the total amount of USDX deposited in the vault (excluding yield).
-    /// @return The total amount of assets deposited by users.
+    /// @notice Returns the total amount of USDX in the vault, including both user deposits and distributed yield.
+    /// @return The total amount of assets in the vault.
     function totalAssets() public view override returns (uint256) {
         return totalDeposited;
     }
