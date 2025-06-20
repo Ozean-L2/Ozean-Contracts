@@ -14,6 +14,10 @@ import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
 contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
     using SafeERC20 for IERC20Metadata;
 
+    // Custom Errors
+    error InsufficientInitialShares();
+    error ZeroAmount();
+
     /// @notice The total number of USDX held by this contract that has been deposited legitmately.
     uint256 public totalDeposited;
 
@@ -31,7 +35,7 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
         ERC20("Ozean USD", "ozUSD")
     {
         _transferOwnership(_owner);
-        require(_sharesAmount >= 1e18, "OzUSD: Must deploy with at least one USDX.");
+        if (_sharesAmount < 1e18) revert InsufficientInitialShares();
         mint(_sharesAmount, address(0xdead));
     }
 
@@ -66,8 +70,8 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
     }
 
     /// @dev See {IERC4626-totalAssets}.
-    /// @notice Returns the total amount of USDX deposited in the vault (excluding yield).
-    /// @return The total amount of assets deposited by users.
+    /// @notice Returns the total amount of USDX in the vault, including both user deposits and distributed yield.
+    /// @return The total amount of assets in the vault.
     function totalAssets() public view override returns (uint256) {
         return totalDeposited;
     }
@@ -94,8 +98,8 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
         internal
         override
     {
-        super._withdraw(_caller, _receiver, _owner, _assets, _shares);
         totalDeposited -= _assets;
+        super._withdraw(_caller, _receiver, _owner, _assets, _shares);
     }
 
     /// OWNER ///
@@ -103,14 +107,50 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
     /// @notice Distributes the yield to the protocol by updating the total pooled USDX balance.
     /// @param _amount The amount of USDX to deposit and evenly distribute to ozUSD holders.
     function distributeYield(uint256 _amount) external nonReentrant onlyOwner {
+        if (_amount == 0) revert ZeroAmount();
+        uint256 previousTotal = totalDeposited;
         IERC20Metadata(asset()).safeTransferFrom(msg.sender, address(this), _amount);
         totalDeposited += _amount;
-        emit YieldDistributed(totalAssets() - _amount, totalAssets());
+        emit YieldDistributed(previousTotal, totalDeposited);
     }
 
     /// @notice This function allows the owner to pause or unpause this contract.
     /// @param  _set The boolean for whether the contract is to be paused or unpaused. True for paused, false otherwise.
     function setPaused(bool _set) external onlyOwner {
         _set ? _pause() : _unpause();
+    }
+
+
+
+    /// @notice Returns the maximum amount of assets that can be deposited for the `receiver`.
+    /// @dev Overrides the ERC4626 implementation to return 0 when the contract is paused.
+    /// @param receiver The address of the receiver.
+    /// @return Maximum amount of assets that can be deposited. Returns 0 when paused.
+    function maxDeposit(address receiver) public view override returns (uint256) {
+        return paused() ? 0 : super.maxDeposit(receiver);
+    }
+
+    /// @notice Returns the maximum amount of shares that can be minted for the `receiver`.
+    /// @dev Overrides the ERC4626 implementation to return 0 when the contract is paused.
+    /// @param receiver The address of the receiver.
+    /// @return Maximum amount of shares that can be minted. Returns 0 when paused.
+    function maxMint(address receiver) public view override returns (uint256) {
+        return paused() ? 0 : super.maxMint(receiver);
+    }
+
+    /// @notice Returns the maximum amount of assets that can be withdrawn by `owner`.
+    /// @dev Overrides the ERC4626 implementation to return 0 when the contract is paused.
+    /// @param owner The address of the owner.
+    /// @return Maximum amount of assets that can be withdrawn. Returns 0 when paused.
+    function maxWithdraw(address owner) public view override returns (uint256) {
+        return paused() ? 0 : super.maxWithdraw(owner);
+    }
+
+    /// @notice Returns the maximum amount of shares that can be redeemed by `owner`.
+    /// @dev Overrides the ERC4626 implementation to return 0 when the contract is paused.
+    /// @param owner The address of the owner.
+    /// @return Maximum amount of shares that can be redeemed. Returns 0 when paused.
+    function maxRedeem(address owner) public view override returns (uint256) {
+        return paused() ? 0 : super.maxRedeem(owner);
     }
 }
