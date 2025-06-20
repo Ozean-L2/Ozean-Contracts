@@ -203,7 +203,14 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     function _getBridgeAmount(address _stablecoin, uint256 _amount) internal view returns (uint256) {
         uint8 depositDecimals = IERC20Decimals(_stablecoin).decimals();
         uint8 usdxDecimals = l1USDX.decimals();
-        return (_amount * 10 ** usdxDecimals) / (10 ** depositDecimals);
+
+        if (usdxDecimals == depositDecimals) {
+            return _amount;
+        } else if (usdxDecimals > depositDecimals) {
+            return _amount * (10 ** (usdxDecimals - depositDecimals));
+        } else {
+            return _amount / (10 ** (depositDecimals - usdxDecimals));
+        }
     }
 
     /// @notice Updates the gas limit for lzReceive execution on the destination chain.
