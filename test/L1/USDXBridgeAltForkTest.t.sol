@@ -117,17 +117,13 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         uint256 _amount = 100e6;
         usdc.approve(address(usdxBridgeAlt), _amount);
 
-        // Assumes _amount is in a 6-decimal token (e.g., USDC) and USDX has 18 decimals.
-        // Converts to 18-decimal units by multiplying by 10^12 (18 - 6).
-        uint256 usdxAmount = _amount * (10 ** 12);
-
         uint256 aliceBalanceBefore = address(alice).balance;
         uint256 bridgeBalanceBefore = address(usdxBridgeAlt).balance;
 
         /// Bridge
         usdxBridgeAlt.bridge{value: 0.01 ether}(address(usdc), _amount, alice);
 
-        assertEq(usdxBridgeAlt.totalBridged(address(usdc)), usdxAmount);
+        assertEq(usdxBridgeAlt.totalBridged(address(usdc)), _amount);
 
         uint256 aliceBalanceAfter = address(alice).balance;
         uint256 bridgeBalanceAfter = address(usdxBridgeAlt).balance;
@@ -144,14 +140,11 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         /// Mint and approve
         uint256 _amount = 100e6;
         IERC20Alt(address(usdt)).approve(address(usdxBridgeAlt), _amount);
-        // Assumes _amount is in a 6-decimal token (e.g., USDT) and USDX has 18 decimals.
-        // Converts to 18-decimal units by multiplying by 10^12 (18 - 6).
-        uint256 usdxAmount = _amount * (10 ** 12);
 
         /// Bridge
         usdxBridgeAlt.bridge{value: 0.01 ether}(address(usdt), _amount, alice);
 
-        assertEq(usdxBridgeAlt.totalBridged(address(usdt)), usdxAmount);
+        assertEq(usdxBridgeAlt.totalBridged(address(usdt)), _amount);
     }
 
     function testBridgeUSDXWithDAI() public prank(alice) {

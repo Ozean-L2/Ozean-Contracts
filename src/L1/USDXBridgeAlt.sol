@@ -122,7 +122,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
         require(allowlisted[_stablecoin], "USDX Bridge: Stablecoin not accepted.");
         uint256 bridgeAmount = _getBridgeAmount(_stablecoin, _amount);
         require(
-            totalBridged[_stablecoin] + bridgeAmount <= depositCap[_stablecoin],
+            totalBridged[_stablecoin] + _amount <= depositCap[_stablecoin],
             "USDX Bridge: Bridge amount exceeds deposit cap."
         );
         /// Update state
@@ -132,7 +132,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
             IERC20Decimals(_stablecoin).balanceOf(address(this)) - balanceBefore == _amount,
             "USDX Bridge: Fee-on-transfer tokens not supported."
         );
-        totalBridged[_stablecoin] += bridgeAmount;
+        totalBridged[_stablecoin] += _amount;
         // Mint USDX
         l1USDX.mint(address(this), bridgeAmount);
         /// Bridge USDX via LZ
@@ -166,7 +166,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
 
     /// @notice This function allows the owner to modify the deposit cap for deposited stablecoins.
     /// @param  _stablecoin The stablecoin address to modify the deposit cap.
-    /// @param  _newDepositCap The new deposit cap.
+    /// @param  _newDepositCap The new deposit cap in the native decimals of the stablecoin.
     function setDepositCap(address _stablecoin, uint256 _newDepositCap) external onlyOwner {
         depositCap[_stablecoin] = _newDepositCap;
         emit DepositCapSet(_stablecoin, _newDepositCap);
