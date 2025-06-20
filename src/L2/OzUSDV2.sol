@@ -94,8 +94,8 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
         internal
         override
     {
-        super._withdraw(_caller, _receiver, _owner, _assets, _shares);
         totalDeposited -= _assets;
+        super._withdraw(_caller, _receiver, _owner, _assets, _shares);
     }
 
     /// OWNER ///
