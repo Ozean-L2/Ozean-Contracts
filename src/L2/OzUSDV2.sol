@@ -103,9 +103,10 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
     /// @notice Distributes the yield to the protocol by updating the total pooled USDX balance.
     /// @param _amount The amount of USDX to deposit and evenly distribute to ozUSD holders.
     function distributeYield(uint256 _amount) external nonReentrant onlyOwner {
+        uint256 previousTotal = totalDeposited;
         IERC20Metadata(asset()).safeTransferFrom(msg.sender, address(this), _amount);
         totalDeposited += _amount;
-        emit YieldDistributed(totalAssets() - _amount, totalAssets());
+        emit YieldDistributed(previousTotal, totalDeposited);
     }
 
     /// @notice This function allows the owner to pause or unpause this contract.
