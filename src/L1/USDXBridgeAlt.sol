@@ -7,7 +7,6 @@ import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.s
 import {
     SendParam, OFTReceipt, MessagingReceipt, MessagingFee
 } from "@layerzero/oapp/contracts/oft/interfaces/IOFT.sol";
-import {MessagingFee} from "@layerzero/oapp/contracts/oapp/OApp.sol";
 import {OptionsBuilder} from "@layerzero/oapp/contracts/oapp/libs/OptionsBuilder.sol";
 import {IERC20Decimals} from "src/L1/interfaces/IERC20Decimals.sol";
 import {IUSDX} from "src/L1/interfaces/IUSDX.sol";
