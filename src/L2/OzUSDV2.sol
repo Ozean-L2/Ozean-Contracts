@@ -113,4 +113,38 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
     function setPaused(bool _set) external onlyOwner {
         _set ? _pause() : _unpause();
     }
+
+
+
+    /// @notice Returns the maximum amount of assets that can be deposited for the `receiver`.
+    /// @dev Overrides the ERC4626 implementation to return 0 when the contract is paused.
+    /// @param receiver The address of the receiver.
+    /// @return Maximum amount of assets that can be deposited. Returns 0 when paused.
+    function maxDeposit(address receiver) public view override returns (uint256) {
+        return paused() ? 0 : super.maxDeposit(receiver);
+    }
+
+    /// @notice Returns the maximum amount of shares that can be minted for the `receiver`.
+    /// @dev Overrides the ERC4626 implementation to return 0 when the contract is paused.
+    /// @param receiver The address of the receiver.
+    /// @return Maximum amount of shares that can be minted. Returns 0 when paused.
+    function maxMint(address receiver) public view override returns (uint256) {
+        return paused() ? 0 : super.maxMint(receiver);
+    }
+
+    /// @notice Returns the maximum amount of assets that can be withdrawn by `owner`.
+    /// @dev Overrides the ERC4626 implementation to return 0 when the contract is paused.
+    /// @param owner The address of the owner.
+    /// @return Maximum amount of assets that can be withdrawn. Returns 0 when paused.
+    function maxWithdraw(address owner) public view override returns (uint256) {
+        return paused() ? 0 : super.maxWithdraw(owner);
+    }
+
+    /// @notice Returns the maximum amount of shares that can be redeemed by `owner`.
+    /// @dev Overrides the ERC4626 implementation to return 0 when the contract is paused.
+    /// @param owner The address of the owner.
+    /// @return Maximum amount of shares that can be redeemed. Returns 0 when paused.
+    function maxRedeem(address owner) public view override returns (uint256) {
+        return paused() ? 0 : super.maxRedeem(owner);
+    }
 }
