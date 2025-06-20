@@ -41,6 +41,10 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @dev    stablecoin => amount
     mapping(address => uint256) public totalBridged;
 
+    /// @notice The gas limit for lzReceive execution on the destination chain.
+    /// @dev    Default value is 65000.
+    uint128 public lzReceiveGasLimit;
+
     /// EVENTS ///
 
     /// @notice An event emitted when a bridge deposit is made by a user.
@@ -64,6 +68,11 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @notice An event emitted when the deposit cap for an ERC20 stablecoin is modified.
     event DepositCapSet(address indexed _coin, uint256 _newDepositCap);
 
+    /// @notice An event emitted when the lzReceive gas limit is updated.
+    /// @param _oldGasLimit The previous gas limit value.
+    /// @param _newGasLimit The new gas limit value.
+    event LzReceiveGasLimitUpdated(uint128 _oldGasLimit, uint128 _newGasLimit);
+
     /// SETUP ///
 
     /// @notice The constructor contract set up.
@@ -85,6 +94,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
         _transferOwnership(_owner);
         l1USDX = IUSDX(_l1USDX);
         eid = _eid;
+        lzReceiveGasLimit = 65000;
         uint256 length = _stablecoins.length;
         require(
             length == _depositCaps.length,
@@ -126,7 +136,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
         // Mint USDX
         l1USDX.mint(address(this), bridgeAmount);
         /// Bridge USDX via LZ
-        bytes memory extraOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(65000, 0);
+        bytes memory extraOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(lzReceiveGasLimit, 0);
         SendParam memory sendParam =
             SendParam(eid, addressToBytes32(_to), bridgeAmount, bridgeAmount, extraOptions, "", "");
         MessagingFee memory fee = l1USDX.quoteSend(sendParam, false);
@@ -194,6 +204,16 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
         uint8 depositDecimals = IERC20Decimals(_stablecoin).decimals();
         uint8 usdxDecimals = l1USDX.decimals();
         return (_amount * 10 ** usdxDecimals) / (10 ** depositDecimals);
+    }
+
+    /// @notice Updates the gas limit for lzReceive execution on the destination chain.
+    /// @dev    Only callable by the contract owner.
+    /// @param  _newGasLimit The new gas limit value to set.
+    function setLzReceiveGasLimit(uint128 _newGasLimit) external onlyOwner {
+        require(_newGasLimit > 0, "USDX Bridge: Gas limit must be greater than zero.");
+        uint128 oldGasLimit = lzReceiveGasLimit;
+        lzReceiveGasLimit = _newGasLimit;
+        emit LzReceiveGasLimitUpdated(oldGasLimit, _newGasLimit);
     }
 
     /// @notice Converts an Ethereum address to a bytes32 representation.
