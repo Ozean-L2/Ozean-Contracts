@@ -14,6 +14,9 @@ import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
 contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
     using SafeERC20 for IERC20Metadata;
 
+    // Custom Errors
+    error InsufficientInitialShares();
+
     /// @notice The total number of USDX held by this contract that has been deposited legitmately.
     uint256 public totalDeposited;
 
@@ -31,7 +34,7 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
         ERC20("Ozean USD", "ozUSD")
     {
         _transferOwnership(_owner);
-        require(_sharesAmount >= 1e18, "OzUSD: Must deploy with at least one USDX.");
+        if (_sharesAmount < 1e18) revert InsufficientInitialShares();
         mint(_sharesAmount, address(0xdead));
     }
 
@@ -94,8 +97,8 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
         internal
         override
     {
-        super._withdraw(_caller, _receiver, _owner, _assets, _shares);
         totalDeposited -= _assets;
+        super._withdraw(_caller, _receiver, _owner, _assets, _shares);
     }
 
     /// OWNER ///

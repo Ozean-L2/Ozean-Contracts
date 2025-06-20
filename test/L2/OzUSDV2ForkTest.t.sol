@@ -27,7 +27,7 @@ contract OzUSDV2ForkTest is TestSetup {
     }
 
     function testDeployRevertConditions() public {
-        vm.expectRevert("OzUSD: Must deploy with at least one USDX.");
+        vm.expectRevert(OzUSDV2.InsufficientInitialShares.selector);
         ozUSDV2 = new OzUSDV2(IERC20Metadata(address(l2USDX)), hexTrust, 1e18 - 1);
     }
 

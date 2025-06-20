@@ -22,6 +22,20 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20Decimals;
     using OptionsBuilder for bytes;
 
+    // Custom Errors
+    error ZeroAddress();
+    error ZeroAmount();
+    error StablecoinNotAccepted();
+    error BridgeAmountTooSmall();
+    error ExceedsDepositCap();
+    error FeeOnTransferTokenNotSupported();
+    error InsufficientLayerZeroFee();
+    error ETHRefundFailed();
+    error InsufficientETHBalance();
+    error ETHTransferFailed();
+    error GasLimitMustBePositive();
+    error InvalidArrayLength();
+
     /// @notice The address of the USDX contract on mainnet.
     IUSDX public immutable l1USDX;
 
@@ -95,12 +109,11 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
         eid = _eid;
         lzReceiveGasLimit = 65000;
         uint256 length = _stablecoins.length;
-        require(
-            length == _depositCaps.length,
-            "USDX Bridge: Stablecoins array length must equal the Deposit Caps array length."
-        );
+        if (_stablecoins.length != _depositCaps.length) {
+            revert InvalidArrayLength();
+        }
         for (uint256 i; i < length; ++i) {
-            require(_stablecoins[i] != address(0), "USDX Bridge: Zero address.");
+            if (_stablecoins[i] == address(0)) revert ZeroAddress();
             allowlisted[_stablecoins[i]] = true;
             emit AllowlistSet(_stablecoins[i], true);
             depositCap[_stablecoins[i]] = _depositCaps[i];
@@ -116,22 +129,20 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @param  _to Receiving address on L2.
     function bridge(address _stablecoin, uint256 _amount, address _to) external payable nonReentrant {
         /// Checks
-        require(_amount > 0, "USDX Bridge: May not bridge nothing.");
-        require(_to != address(0), "USDX Bridge: Cannot bridge to the zero address.");
-        require(allowlisted[_stablecoin], "USDX Bridge: Stablecoin not accepted.");
+        if (_amount == 0) revert ZeroAmount();
+        if (_to == address(0)) revert ZeroAddress();
+        if (!allowlisted[_stablecoin]) revert StablecoinNotAccepted();
         uint256 bridgeAmount = _getBridgeAmount(_stablecoin, _amount);
-        require(bridgeAmount > 0, "USDX Bridge: Bridge amount too small.");
-        require(
-            totalBridged[_stablecoin] + _amount <= depositCap[_stablecoin],
-            "USDX Bridge: Bridge amount exceeds deposit cap."
-        );
+        if (bridgeAmount == 0) revert BridgeAmountTooSmall();
+        if (totalBridged[_stablecoin] + _amount > depositCap[_stablecoin]) {
+            revert ExceedsDepositCap();
+        }
         /// Update state
         uint256 balanceBefore = IERC20Decimals(_stablecoin).balanceOf(address(this));
         IERC20Decimals(_stablecoin).safeTransferFrom(msg.sender, address(this), _amount);
-        require(
-            IERC20Decimals(_stablecoin).balanceOf(address(this)) - balanceBefore == _amount,
-            "USDX Bridge: Fee-on-transfer tokens not supported."
-        );
+        if (IERC20Decimals(_stablecoin).balanceOf(address(this)) - balanceBefore != _amount) {
+            revert FeeOnTransferTokenNotSupported();
+        }
         totalBridged[_stablecoin] += _amount;
         // Mint USDX
         l1USDX.mint(address(this), bridgeAmount);
@@ -140,14 +151,14 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
         SendParam memory sendParam =
             SendParam(eid, addressToBytes32(_to), bridgeAmount, bridgeAmount, extraOptions, "", "");
         MessagingFee memory fee = l1USDX.quoteSend(sendParam, false);
-        require(msg.value >= fee.nativeFee, "USDX Bridge: Layer Zero fee.");
+        if (msg.value < fee.nativeFee) revert InsufficientLayerZeroFee();
         (MessagingReceipt memory msgReceipt,) =
                  l1USDX.send{value: fee.nativeFee}(sendParam, fee, msg.sender);
         /// Refund excess eth if any
         uint256 excessEth = msg.value - fee.nativeFee;
         if (excessEth > 0) {
             (bool success,) = address(msg.sender).call{value: excessEth}("");
-            require(success, "USDX Bridge: ETH refund failed.");
+            if (!success) revert ETHRefundFailed();
         }
         /// @dev some check to ensure tokens are sent in case of soft-revert at the bridge
         emit BridgeDeposit(_stablecoin, _amount, _to, msgReceipt.guid);
@@ -176,11 +187,11 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @param  _amount The amount of ETH to withdraw.
     /// @param  _to The address to receive the withdrawn ETH.
     function withdrawETH(uint256 _amount, address _to) external onlyOwner {
-        require(_amount > 0, "USDX Bridge: Cannot withdraw zero.");
-        require(_to != address(0), "USDX Bridge: Cannot withdraw to the zero address.");
-        require(_amount <= address(this).balance, "USDX Bridge: Insufficient ETH balance.");
+        if (_amount == 0) revert ZeroAmount();
+        if (_to == address(0)) revert ZeroAddress();
+        if (_amount > address(this).balance) revert InsufficientETHBalance();
         (bool success, ) = _to.call{value: _amount}("");
-        require(success, "USDX Bridge: ETH transfer failed.");
+        if (!success) revert ETHTransferFailed();
         emit WithdrawETH(_amount, _to);
     }
 
@@ -188,7 +199,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @param  _coin The address of the ERC20 token to withdraw.
     /// @param  _amount The amount of tokens to withdraw.
     function withdrawERC20(address _coin, uint256 _amount) external onlyOwner {
-        require(_amount > 0, "USDX Bridge: Cannot withdraw zero.");
+        if (_amount == 0) revert ZeroAmount();
         IERC20Decimals(_coin).safeTransfer(msg.sender, _amount);
         emit WithdrawERC20(_coin, _amount, msg.sender);
     }
@@ -217,7 +228,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @dev    Only callable by the contract owner.
     /// @param  _newGasLimit The new gas limit value to set.
     function setLzReceiveGasLimit(uint128 _newGasLimit) external onlyOwner {
-        require(_newGasLimit > 0, "USDX Bridge: Gas limit must be greater than zero.");
+        if (_newGasLimit == 0) revert GasLimitMustBePositive();
         uint128 oldGasLimit = lzReceiveGasLimit;
         lzReceiveGasLimit = _newGasLimit;
         emit LzReceiveGasLimitUpdated(oldGasLimit, _newGasLimit);
