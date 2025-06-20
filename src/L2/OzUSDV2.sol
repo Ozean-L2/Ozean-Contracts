@@ -16,6 +16,7 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
 
     // Custom Errors
     error InsufficientInitialShares();
+    error ZeroAmount();
 
     /// @notice The total number of USDX held by this contract that has been deposited legitmately.
     uint256 public totalDeposited;
@@ -106,6 +107,7 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
     /// @notice Distributes the yield to the protocol by updating the total pooled USDX balance.
     /// @param _amount The amount of USDX to deposit and evenly distribute to ozUSD holders.
     function distributeYield(uint256 _amount) external nonReentrant onlyOwner {
+        if (_amount == 0) revert ZeroAmount();
         uint256 previousTotal = totalDeposited;
         IERC20Metadata(asset()).safeTransferFrom(msg.sender, address(this), _amount);
         totalDeposited += _amount;
