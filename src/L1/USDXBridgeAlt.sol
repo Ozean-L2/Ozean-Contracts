@@ -35,6 +35,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     error ETHTransferFailed();
     error GasLimitMustBePositive();
     error InvalidArrayLength();
+    error InvalidMinAmount();
 
     /// @notice The address of the USDX contract on mainnet.
     IUSDX public immutable l1USDX;
@@ -61,7 +62,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// EVENTS ///
 
     /// @notice An event emitted when a bridge deposit is made by a user.
-    event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _to, bytes32 _messageId);
+    event BridgeDeposit(address indexed _stablecoin, uint256 _amount, uint256 _minAmount, address indexed _to, bytes32 _messageId);
 
     /// @notice Emitted when ETH is withdrawn from the contract.
     /// @param amount The amount of ETH withdrawn.
@@ -126,14 +127,16 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @notice This function allows users to deposit any allow-listed stablecoin to the Ozean Layer L2.
     /// @param  _stablecoin Depositing stablecoin address.
     /// @param  _amount The amount of deposit stablecoin to be swapped for USDX.
+    /// @param  _minAmount The minimum amount of USDX to be received after bridging, used for slippage protection.
     /// @param  _to Receiving address on L2.
-    function bridge(address _stablecoin, uint256 _amount, address _to) external payable nonReentrant {
+    function bridge(address _stablecoin, uint256 _amount, uint256 _minAmount, address _to) external payable nonReentrant {
         /// Checks
         if (_amount == 0) revert ZeroAmount();
         if (_to == address(0)) revert ZeroAddress();
         if (!allowlisted[_stablecoin]) revert StablecoinNotAccepted();
         uint256 bridgeAmount = _getBridgeAmount(_stablecoin, _amount);
         if (bridgeAmount == 0) revert BridgeAmountTooSmall();
+        if (_minAmount > bridgeAmount) revert InvalidMinAmount();
         if (totalBridged[_stablecoin] + _amount > depositCap[_stablecoin]) {
             revert ExceedsDepositCap();
         }
@@ -149,7 +152,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
         /// Bridge USDX via LZ
         bytes memory extraOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(lzReceiveGasLimit, 0);
         SendParam memory sendParam =
-            SendParam(eid, addressToBytes32(_to), bridgeAmount, bridgeAmount, extraOptions, "", "");
+            SendParam(eid, addressToBytes32(_to), bridgeAmount, _minAmount, extraOptions, "", "");
         MessagingFee memory fee = l1USDX.quoteSend(sendParam, false);
         if (msg.value < fee.nativeFee) revert InsufficientLayerZeroFee();
         (MessagingReceipt memory msgReceipt,) =
@@ -161,7 +164,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
             if (!success) revert ETHRefundFailed();
         }
         /// @dev some check to ensure tokens are sent in case of soft-revert at the bridge
-        emit BridgeDeposit(_stablecoin, _amount, _to, msgReceipt.guid);
+        emit BridgeDeposit(_stablecoin, _amount, _minAmount, _to, msgReceipt.guid);
     }
 
     /// OWNER ///
