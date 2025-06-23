@@ -134,7 +134,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
         if (_amount == 0) revert ZeroAmount();
         if (_to == address(0)) revert ZeroAddress();
         if (!allowlisted[_stablecoin]) revert StablecoinNotAccepted();
-        uint256 bridgeAmount = _getBridgeAmount(_stablecoin, _amount);
+        uint256 bridgeAmount = getBridgeAmount(_stablecoin, _amount);
         if (bridgeAmount == 0) revert BridgeAmountTooSmall();
         if (_minAmount > bridgeAmount) revert InvalidMinAmount();
         if (totalBridged[_stablecoin] + _amount > depositCap[_stablecoin]) {
@@ -214,7 +214,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @param  _amount The amount of the stablecoin deposited.
     /// @return uint256 The amount of USDX to mint given the deposited stablecoin amount.
     /// @dev    Assumes 1:1 conversion between the deposited stablecoin and USDX.
-    function _getBridgeAmount(address _stablecoin, uint256 _amount) internal view returns (uint256) {
+    function getBridgeAmount(address _stablecoin, uint256 _amount) public view returns (uint256) {
         uint8 depositDecimals = IERC20Decimals(_stablecoin).decimals();
         uint8 usdxDecimals = l1USDX.decimals();
 

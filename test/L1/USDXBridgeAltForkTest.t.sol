@@ -77,8 +77,12 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         /// Non-accepted stablecoin/ERC20
         uint256 _amount = 100e18;
         TestERC20Decimals usde = new TestERC20Decimals(18);
-        vm.expectRevert(USDXBridgeAlt.StablecoinNotAccepted.selector);
-        usdxBridgeAlt.bridge(address(usde), _amount, _amount, alice);
+
+        {
+            uint256 minAmount = usdxBridgeAlt.getBridgeAmount(address(usde), _amount);
+            vm.expectRevert(USDXBridgeAlt.StablecoinNotAccepted.selector);
+            usdxBridgeAlt.bridge(address(usde), _amount, minAmount, alice);
+        }
 
         /// Deposit zero
         vm.expectRevert(USDXBridgeAlt.ZeroAmount.selector);
@@ -86,13 +90,21 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
 
         /// Deposit Cap exceeded
         uint256 excess = usdxBridgeAlt.depositCap(address(dai)) + 1;
-        vm.expectRevert(USDXBridgeAlt.ExceedsDepositCap.selector);
-        usdxBridgeAlt.bridge(address(dai), excess, excess, alice);
+
+        {
+            uint256 minAmount = usdxBridgeAlt.getBridgeAmount(address(dai), excess);
+            vm.expectRevert(USDXBridgeAlt.ExceedsDepositCap.selector);
+            usdxBridgeAlt.bridge(address(dai), excess, minAmount, alice);
+        }
 
         /// Insufficient LZ fee passed
         usdc.approve(address(usdxBridgeAlt), 100e6);
-        vm.expectRevert(USDXBridgeAlt.InsufficientLayerZeroFee.selector);
-        usdxBridgeAlt.bridge{value: 0}(address(usdc), 100e6, 100e6, alice);
+
+        {
+            uint256 minAmount = usdxBridgeAlt.getBridgeAmount(address(usdc), 100e6);
+            vm.expectRevert(USDXBridgeAlt.InsufficientLayerZeroFee.selector);
+            usdxBridgeAlt.bridge{value: 0}(address(usdc), 100e6, minAmount, alice);
+        }
 
         vm.stopPrank();
         vm.startPrank(hexTrust);
@@ -105,11 +117,17 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
         usdxBridgeAlt.setAllowlist(address(feeOnTransfer), true);
         usdxBridgeAlt.setDepositCap(address(feeOnTransfer), 1e30);
 
-        vm.expectRevert(USDXBridgeAlt.FeeOnTransferTokenNotSupported.selector);
-        usdxBridgeAlt.bridge(address(feeOnTransfer), 1 ether, 1 ether, hexTrust);
+        {
+            uint256 minAmount = usdxBridgeAlt.getBridgeAmount(address(feeOnTransfer), 1 ether);
+            vm.expectRevert(USDXBridgeAlt.FeeOnTransferTokenNotSupported.selector);
+            usdxBridgeAlt.bridge(address(feeOnTransfer), 1 ether, minAmount, hexTrust);
+        }
 
-        vm.expectRevert(USDXBridgeAlt.ZeroAddress.selector);
-        usdxBridgeAlt.bridge(address(feeOnTransfer), 1 ether, 1 ether, address(0));
+        {
+            uint256 minAmount = usdxBridgeAlt.getBridgeAmount(address(feeOnTransfer), 1 ether);
+            vm.expectRevert(USDXBridgeAlt.ZeroAddress.selector);
+            usdxBridgeAlt.bridge(address(feeOnTransfer), 1 ether, minAmount, address(0));
+        }
     }
 
     function testBridgeUSDXWithUSDC() public prank(alice) {
