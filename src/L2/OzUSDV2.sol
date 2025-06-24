@@ -5,18 +5,22 @@ import {ERC4626, ERC20, IERC20Metadata, SafeERC20} from "openzeppelin/contracts/
 import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Pausable} from "openzeppelin/contracts/security/Pausable.sol";
 import {Ownable} from "openzeppelin/contracts/access/Ownable.sol";
+import {AccessControl} from "openzeppelin/contracts/access/AccessControl.sol";
 
 /// @title  Ozean USD (ozUSD) Token Contract
 /// @notice This contract represents a yield-bearing vault for USDX tokens, adhering to the ERC-4626 standard.
 /// @dev    !!! NEEDS AN AUDIT !!!
 ///         Overrides _deposit() and _withdraw() flow to allow only the owner to distribute yield.
 ///         https://docs.euler.finance/creator-tools/security/attack-vectors/donation-attacks/
-contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
+contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable, AccessControl {
     using SafeERC20 for IERC20Metadata;
 
     // Custom Errors
     error InsufficientInitialShares();
     error ZeroAmount();
+
+    /// @notice Role for accounts authorized to distribute yield
+    bytes32 public constant YIELD_DISTRIBUTOR_ROLE = keccak256("YIELD_DISTRIBUTOR_ROLE");
 
     /// @notice The total number of USDX held by this contract that has been deposited legitmately.
     uint256 public totalDeposited;
@@ -37,6 +41,9 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
         _transferOwnership(_owner);
         if (_sharesAmount < 1e18) revert InsufficientInitialShares();
         mint(_sharesAmount, address(0xdead));
+        
+        // Set up initial role structure
+        _setupRole(DEFAULT_ADMIN_ROLE, _owner);
     }
 
     /// OVERRIDES ///
@@ -106,7 +113,7 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
 
     /// @notice Distributes the yield to the protocol by updating the total pooled USDX balance.
     /// @param _amount The amount of USDX to deposit and evenly distribute to ozUSD holders.
-    function distributeYield(uint256 _amount) external nonReentrant onlyOwner {
+    function distributeYield(uint256 _amount) external nonReentrant onlyRole(YIELD_DISTRIBUTOR_ROLE) {
         if (_amount == 0) revert ZeroAmount();
         uint256 previousTotal = totalDeposited;
         IERC20Metadata(asset()).safeTransferFrom(msg.sender, address(this), _amount);
@@ -119,8 +126,6 @@ contract OzUSDV2 is ERC4626, ReentrancyGuard, Pausable, Ownable {
     function setPaused(bool _set) external onlyOwner {
         _set ? _pause() : _unpause();
     }
-
-
 
     /// @notice Returns the maximum amount of assets that can be deposited for the `receiver`.
     /// @dev Overrides the ERC4626 implementation to return 0 when the contract is paused.

@@ -36,12 +36,16 @@ contract OzUSDV2ForkTest is TestSetup {
         assertEq(l2USDX.balanceOf(address(ozUSDV2)), 1e18);
         assertEq(ozUSDV2.convertToAssets(amount), amount);
 
-        /// Owner only
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(
+            "AccessControl: account 0xef211076b8d8b46797e09c9a374fb4cdc1df0916 is missing role 0x30cc2fcab974a5a2540213c549fc919ac7160838938e5a3a04b40906b512611a"
+        );
         ozUSDV2.distributeYield(1e18);
 
         vm.stopPrank();
         vm.startPrank(hexTrust);
+
+        // Grant YIELD_DISTRIBUTOR_ROLE to hexTrust
+        ozUSDV2.grantRole(ozUSDV2.YIELD_DISTRIBUTOR_ROLE(), hexTrust);
 
         /// Allowance
         vm.expectRevert("ERC20: insufficient allowance");
@@ -77,6 +81,9 @@ contract OzUSDV2ForkTest is TestSetup {
         vm.startPrank(hexTrust);
 
         l2USDX.approve(address(ozUSDV2), _amountB);
+
+        // Grant YIELD_DISTRIBUTOR_ROLE to hexTrust
+        ozUSDV2.grantRole(ozUSDV2.YIELD_DISTRIBUTOR_ROLE(), hexTrust);
 
         vm.expectEmit(true, true, true, true);
         emit OzUSDV2.YieldDistributed(1e18 + _amountA, 1e18 + _amountA + _amountB);
@@ -126,6 +133,9 @@ contract OzUSDV2ForkTest is TestSetup {
 
         l2USDX.approve(address(ozUSDV2), _amountB);
 
+        // Grant YIELD_DISTRIBUTOR_ROLE to hexTrust
+        ozUSDV2.grantRole(ozUSDV2.YIELD_DISTRIBUTOR_ROLE(), hexTrust);
+
         vm.expectEmit(true, true, true, true);
         emit OzUSDV2.YieldDistributed(1e18 + _amountA, 1e18 + _amountA + _amountB);
         ozUSDV2.distributeYield(_amountB);
@@ -164,6 +174,9 @@ contract OzUSDV2ForkTest is TestSetup {
         vm.startPrank(hexTrust);
 
         l2USDX.approve(address(ozUSDV2), _amountB);
+
+        // Grant YIELD_DISTRIBUTOR_ROLE to hexTrust
+        ozUSDV2.grantRole(ozUSDV2.YIELD_DISTRIBUTOR_ROLE(), hexTrust);
 
         vm.expectEmit(true, true, true, true);
         emit OzUSDV2.YieldDistributed(1e18 + _amountA, 1e18 + _amountA + _amountB);
@@ -212,6 +225,9 @@ contract OzUSDV2ForkTest is TestSetup {
         vm.startPrank(hexTrust);
 
         l2USDX.approve(address(ozUSDV2), _amountB);
+
+        // Grant YIELD_DISTRIBUTOR_ROLE to hexTrust
+        ozUSDV2.grantRole(ozUSDV2.YIELD_DISTRIBUTOR_ROLE(), hexTrust);
 
         vm.expectEmit(true, true, true, true);
         emit OzUSDV2.YieldDistributed(1e18 + _amountA, 1e18 + _amountA + _amountB);
