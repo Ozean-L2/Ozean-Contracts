@@ -292,4 +292,41 @@ contract USDXBridgeAltForkMainetTest is TestSetup {
 
         assertEq(usdc.balanceOf(hexTrust), _amount);
     }
+
+    function testDepositCapPerTokenRespectsNativeDecimals() public prank(hexTrust) {
+        uint256 usdcCap = 1_000_000; // 1 USDC in 6 decimals
+        uint256 daiCap = 1e18;       // 1 DAI in 18 decimals
+
+        // Set deposit caps as owner
+        usdxBridgeAlt.setDepositCap(address(usdc), usdcCap);
+        usdxBridgeAlt.setDepositCap(address(dai), daiCap);
+        vm.stopPrank();
+
+        // Approve USDC and bridge exactly at cap (positive test)
+        vm.startPrank(alice);
+        usdc.approve(address(usdxBridgeAlt), usdcCap);
+        uint256 minAmount = usdxBridgeAlt.getBridgeAmount(address(usdc), usdcCap);
+        usdxBridgeAlt.bridge{value: 0.01 ether}(address(usdc), usdcCap, minAmount, alice);
+        assertEq(usdxBridgeAlt.totalBridged(address(usdc)), usdcCap);
+
+        // Try to bridge more than cap — should revert (negative test)
+        usdc.approve(address(usdxBridgeAlt), 1);
+        minAmount = usdxBridgeAlt.getBridgeAmount(address(usdc), 1);
+        vm.expectRevert(USDXBridgeAlt.ExceedsDepositCap.selector);
+        usdxBridgeAlt.bridge{value: 0.01 ether}(address(usdc), 1, minAmount, alice);
+
+        // Approve DAI and bridge exactly at cap (positive test)
+        dai.approve(address(usdxBridgeAlt), daiCap);
+        minAmount = usdxBridgeAlt.getBridgeAmount(address(dai), daiCap);
+        usdxBridgeAlt.bridge{value: 0.01 ether}(address(dai), daiCap, minAmount, alice);
+        assertEq(usdxBridgeAlt.totalBridged(address(dai)), daiCap);
+
+        // Try to bridge more than cap — should revert (negative test)
+        dai.approve(address(usdxBridgeAlt), 1);
+        minAmount = usdxBridgeAlt.getBridgeAmount(address(dai), 1);
+        vm.expectRevert(USDXBridgeAlt.ExceedsDepositCap.selector);
+        usdxBridgeAlt.bridge{value: 0.01 ether}(address(dai), 1, minAmount, alice);
+
+        vm.stopPrank();
+    }
 }
