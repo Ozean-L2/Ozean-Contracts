@@ -7,7 +7,6 @@ import {ReentrancyGuard} from "openzeppelin/contracts/security/ReentrancyGuard.s
 import {
     SendParam, OFTReceipt, MessagingReceipt, MessagingFee
 } from "@layerzero/oapp/contracts/oft/interfaces/IOFT.sol";
-import {MessagingFee} from "@layerzero/oapp/contracts/oapp/OApp.sol";
 import {OptionsBuilder} from "@layerzero/oapp/contracts/oapp/libs/OptionsBuilder.sol";
 import {IERC20Decimals} from "src/L1/interfaces/IERC20Decimals.sol";
 import {IUSDX} from "src/L1/interfaces/IUSDX.sol";
@@ -22,6 +21,21 @@ import {IUSDX} from "src/L1/interfaces/IUSDX.sol";
 contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20Decimals;
     using OptionsBuilder for bytes;
+
+    // Custom Errors
+    error ZeroAddress();
+    error ZeroAmount();
+    error StablecoinNotAccepted();
+    error BridgeAmountTooSmall();
+    error ExceedsDepositCap();
+    error FeeOnTransferTokenNotSupported();
+    error InsufficientLayerZeroFee();
+    error ETHRefundFailed();
+    error InsufficientETHBalance();
+    error ETHTransferFailed();
+    error GasLimitMustBePositive();
+    error InvalidArrayLength();
+    error InvalidMinAmount();
 
     /// @notice The address of the USDX contract on mainnet.
     IUSDX public immutable l1USDX;
@@ -41,10 +55,14 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @dev    stablecoin => amount
     mapping(address => uint256) public totalBridged;
 
+    /// @notice The gas limit for lzReceive execution on the destination chain.
+    /// @dev    Default value is 65000.
+    uint128 public lzReceiveGasLimit;
+
     /// EVENTS ///
 
     /// @notice An event emitted when a bridge deposit is made by a user.
-    event BridgeDeposit(address indexed _stablecoin, uint256 _amount, address indexed _to, bytes32 _messageId);
+    event BridgeDeposit(address indexed _stablecoin, uint256 _amount, uint256 _minAmount, address indexed _to, bytes32 _messageId);
 
     /// @notice Emitted when ETH is withdrawn from the contract.
     /// @param amount The amount of ETH withdrawn.
@@ -63,6 +81,11 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
 
     /// @notice An event emitted when the deposit cap for an ERC20 stablecoin is modified.
     event DepositCapSet(address indexed _coin, uint256 _newDepositCap);
+
+    /// @notice An event emitted when the lzReceive gas limit is updated.
+    /// @param _oldGasLimit The previous gas limit value.
+    /// @param _newGasLimit The new gas limit value.
+    event LzReceiveGasLimitUpdated(uint128 _oldGasLimit, uint128 _newGasLimit);
 
     /// SETUP ///
 
@@ -85,13 +108,13 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
         _transferOwnership(_owner);
         l1USDX = IUSDX(_l1USDX);
         eid = _eid;
+        lzReceiveGasLimit = 65000;
         uint256 length = _stablecoins.length;
-        require(
-            length == _depositCaps.length,
-            "USDX Bridge: Stablecoins array length must equal the Deposit Caps array length."
-        );
+        if (_stablecoins.length != _depositCaps.length) {
+            revert InvalidArrayLength();
+        }
         for (uint256 i; i < length; ++i) {
-            require(_stablecoins[i] != address(0), "USDX Bridge: Zero address.");
+            if (_stablecoins[i] == address(0)) revert ZeroAddress();
             allowlisted[_stablecoins[i]] = true;
             emit AllowlistSet(_stablecoins[i], true);
             depositCap[_stablecoins[i]] = _depositCaps[i];
@@ -104,43 +127,44 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @notice This function allows users to deposit any allow-listed stablecoin to the Ozean Layer L2.
     /// @param  _stablecoin Depositing stablecoin address.
     /// @param  _amount The amount of deposit stablecoin to be swapped for USDX.
+    /// @param  _minAmount The minimum amount of USDX to be received after bridging, used for slippage protection.
     /// @param  _to Receiving address on L2.
-    function bridge(address _stablecoin, uint256 _amount, address _to) external payable nonReentrant {
+    function bridge(address _stablecoin, uint256 _amount, uint256 _minAmount, address _to) external payable nonReentrant {
         /// Checks
-        require(_amount > 0, "USDX Bridge: May not bridge nothing.");
-        require(_to != address(0), "USDX Bridge: Cannot bridge to the zero address.");
-        require(allowlisted[_stablecoin], "USDX Bridge: Stablecoin not accepted.");
-        uint256 bridgeAmount = _getBridgeAmount(_stablecoin, _amount);
-        require(
-            totalBridged[_stablecoin] + bridgeAmount <= depositCap[_stablecoin],
-            "USDX Bridge: Bridge amount exceeds deposit cap."
-        );
+        if (_amount == 0) revert ZeroAmount();
+        if (_to == address(0)) revert ZeroAddress();
+        if (!allowlisted[_stablecoin]) revert StablecoinNotAccepted();
+        uint256 bridgeAmount = getBridgeAmount(_stablecoin, _amount);
+        if (bridgeAmount == 0) revert BridgeAmountTooSmall();
+        if (_minAmount > bridgeAmount) revert InvalidMinAmount();
+        if (totalBridged[_stablecoin] + _amount > depositCap[_stablecoin]) {
+            revert ExceedsDepositCap();
+        }
         /// Update state
         uint256 balanceBefore = IERC20Decimals(_stablecoin).balanceOf(address(this));
         IERC20Decimals(_stablecoin).safeTransferFrom(msg.sender, address(this), _amount);
-        require(
-            IERC20Decimals(_stablecoin).balanceOf(address(this)) - balanceBefore == _amount,
-            "USDX Bridge: Fee-on-transfer tokens not supported."
-        );
-        totalBridged[_stablecoin] += bridgeAmount;
+        if (IERC20Decimals(_stablecoin).balanceOf(address(this)) - balanceBefore != _amount) {
+            revert FeeOnTransferTokenNotSupported();
+        }
+        totalBridged[_stablecoin] += _amount;
         // Mint USDX
         l1USDX.mint(address(this), bridgeAmount);
         /// Bridge USDX via LZ
-        bytes memory extraOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(65000, 0);
+        bytes memory extraOptions = OptionsBuilder.newOptions().addExecutorLzReceiveOption(lzReceiveGasLimit, 0);
         SendParam memory sendParam =
-            SendParam(eid, addressToBytes32(_to), bridgeAmount, bridgeAmount, extraOptions, "", "");
+            SendParam(eid, addressToBytes32(_to), bridgeAmount, _minAmount, extraOptions, "", "");
         MessagingFee memory fee = l1USDX.quoteSend(sendParam, false);
-        require(msg.value >= fee.nativeFee, "USDX Bridge: Layer Zero fee.");
+        if (msg.value < fee.nativeFee) revert InsufficientLayerZeroFee();
         (MessagingReceipt memory msgReceipt,) =
                  l1USDX.send{value: fee.nativeFee}(sendParam, fee, msg.sender);
         /// Refund excess eth if any
         uint256 excessEth = msg.value - fee.nativeFee;
         if (excessEth > 0) {
             (bool success,) = address(msg.sender).call{value: excessEth}("");
-            require(success, "USDX Bridge: ETH refund failed.");
+            if (!success) revert ETHRefundFailed();
         }
         /// @dev some check to ensure tokens are sent in case of soft-revert at the bridge
-        emit BridgeDeposit(_stablecoin, _amount, _to, msgReceipt.guid);
+        emit BridgeDeposit(_stablecoin, _amount, _minAmount, _to, msgReceipt.guid);
     }
 
     /// OWNER ///
@@ -156,7 +180,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
 
     /// @notice This function allows the owner to modify the deposit cap for deposited stablecoins.
     /// @param  _stablecoin The stablecoin address to modify the deposit cap.
-    /// @param  _newDepositCap The new deposit cap.
+    /// @param  _newDepositCap The new deposit cap in the native decimals of the stablecoin.
     function setDepositCap(address _stablecoin, uint256 _newDepositCap) external onlyOwner {
         depositCap[_stablecoin] = _newDepositCap;
         emit DepositCapSet(_stablecoin, _newDepositCap);
@@ -166,11 +190,11 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @param  _amount The amount of ETH to withdraw.
     /// @param  _to The address to receive the withdrawn ETH.
     function withdrawETH(uint256 _amount, address _to) external onlyOwner {
-        require(_amount > 0, "USDX Bridge: Cannot withdraw zero.");
-        require(_to != address(0), "USDX Bridge: Cannot withdraw to the zero address.");
-        require(_amount <= address(this).balance, "USDX Bridge: Insufficient ETH balance.");
+        if (_amount == 0) revert ZeroAmount();
+        if (_to == address(0)) revert ZeroAddress();
+        if (_amount > address(this).balance) revert InsufficientETHBalance();
         (bool success, ) = _to.call{value: _amount}("");
-        require(success, "USDX Bridge: ETH transfer failed.");
+        if (!success) revert ETHTransferFailed();
         emit WithdrawETH(_amount, _to);
     }
 
@@ -178,7 +202,7 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @param  _coin The address of the ERC20 token to withdraw.
     /// @param  _amount The amount of tokens to withdraw.
     function withdrawERC20(address _coin, uint256 _amount) external onlyOwner {
-        require(_amount > 0, "USDX Bridge: Cannot withdraw zero.");
+        if (_amount == 0) revert ZeroAmount();
         IERC20Decimals(_coin).safeTransfer(msg.sender, _amount);
         emit WithdrawERC20(_coin, _amount, msg.sender);
     }
@@ -190,10 +214,27 @@ contract USDXBridgeAlt is Ownable, ReentrancyGuard {
     /// @param  _amount The amount of the stablecoin deposited.
     /// @return uint256 The amount of USDX to mint given the deposited stablecoin amount.
     /// @dev    Assumes 1:1 conversion between the deposited stablecoin and USDX.
-    function _getBridgeAmount(address _stablecoin, uint256 _amount) internal view returns (uint256) {
+    function getBridgeAmount(address _stablecoin, uint256 _amount) public view returns (uint256) {
         uint8 depositDecimals = IERC20Decimals(_stablecoin).decimals();
         uint8 usdxDecimals = l1USDX.decimals();
-        return (_amount * 10 ** usdxDecimals) / (10 ** depositDecimals);
+
+        if (usdxDecimals == depositDecimals) {
+            return _amount;
+        } else if (usdxDecimals > depositDecimals) {
+            return _amount * (10 ** (usdxDecimals - depositDecimals));
+        } else {
+            return _amount / (10 ** (depositDecimals - usdxDecimals));
+        }
+    }
+
+    /// @notice Updates the gas limit for lzReceive execution on the destination chain.
+    /// @dev    Only callable by the contract owner.
+    /// @param  _newGasLimit The new gas limit value to set.
+    function setLzReceiveGasLimit(uint128 _newGasLimit) external onlyOwner {
+        if (_newGasLimit == 0) revert GasLimitMustBePositive();
+        uint128 oldGasLimit = lzReceiveGasLimit;
+        lzReceiveGasLimit = _newGasLimit;
+        emit LzReceiveGasLimitUpdated(oldGasLimit, _newGasLimit);
     }
 
     /// @notice Converts an Ethereum address to a bytes32 representation.
